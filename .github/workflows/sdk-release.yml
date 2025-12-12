@@ -144,22 +144,45 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          echo "🚀 Starting deployment to Cloudflare R2"
+          echo "Bucket: ${{ env.CLOUDFLARE_R2_BUCKET }}"
+          echo "Version: ${{ needs.build.outputs.new-version }}"
+
+          # Verify file exists
+          if [ ! -f ./dist/pavekit.min.js ]; then
+            echo "❌ Error: pavekit.min.js not found in dist/"
+            ls -la ./dist/
+            exit 1
+          fi
+
+          echo "✅ Found pavekit.min.js ($(du -h ./dist/pavekit.min.js | cut -f1))"
+
           # Create version directory
           mkdir -p versioned
           cp ./dist/pavekit.min.js ./versioned/
 
+          echo "📦 Uploading versioned file..."
           # Upload versioned file
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          echo "✅ Uploaded v${{ needs.build.outputs.new-version }}"
 
+          echo "📦 Uploading as latest..."
           # Upload as latest
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/latest/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          echo "✅ Uploaded latest"
 
+          echo "📦 Uploading semantic version aliases..."
           # Create semantic version aliases
           MAJOR_VERSION=${{ needs.build.outputs.major }}
           MINOR_VERSION="${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}"
 
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.major }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          echo "✅ Uploaded v${{ needs.build.outputs.major }}"
+
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          echo "✅ Uploaded v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}"
+
+          echo "🎉 All files uploaded successfully!"
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -169,8 +192,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # Get existing versions
-          wrangler r2 object get ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json > existing-versions.json || echo '{"versions":[],"latest":""}' > existing-versions.json
+          # Try to get existing versions, create new if doesn't exist
+          if wrangler r2 object get ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json > existing-versions.json 2>/dev/null; then
+            echo "✅ Found existing versions.json"
+            # Validate it's valid JSON
+            if ! jq empty existing-versions.json 2>/dev/null; then
+              echo "⚠️ Invalid JSON in versions.json, creating new file"
+              echo '{"versions":[],"latest":""}' > existing-versions.json
+            fi
+          else
+            echo "📝 No versions.json found, creating new file"
+            echo '{"versions":[],"latest":""}' > existing-versions.json
+          fi
 
           # Update with new version
           NEW_VERSION='${{ needs.build.outputs.new-version }}'
@@ -178,6 +211,8 @@ jobs:
 
           # Upload updated versions file
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json --file=new-versions.json
+
+          echo "✅ Updated versions.json with version $NEW_VERSION"
 
   release:
     runs-on: ubuntu-latest
