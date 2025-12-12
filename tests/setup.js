@@ -101,21 +101,19 @@ global.getComputedStyle = jest.fn(() => ({
   visibility: "visible",
 }));
 
-// Mock CustomEvent
-global.CustomEvent = jest.fn((type, options) => ({
-  type,
-  detail: options?.detail || {},
-  bubbles: options?.bubbles || false,
-  cancelable: options?.cancelable || false,
-}));
-
-// Mock setTimeout and setInterval for testing
-jest.useFakeTimers();
+// Use real CustomEvent if available, otherwise create a polyfill
+if (typeof window.CustomEvent !== "function") {
+  global.CustomEvent = class CustomEvent extends Event {
+    constructor(type, options = {}) {
+      super(type, options);
+      this.detail = options.detail || {};
+    }
+  };
+}
 
 // Reset all mocks before each test
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.clearAllTimers();
 
   // Reset localStorage
   localStorageMock.getItem.mockReturnValue(null);
@@ -164,13 +162,6 @@ beforeEach(() => {
     value: null,
     writable: true,
   });
-});
-
-// Clean up after each test
-afterEach(() => {
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
-  jest.useFakeTimers();
 });
 
 // Global test helpers

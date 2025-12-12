@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Home - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li>
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+    <section class="readme">
+        <article><h1>PaveKit JavaScript SDK</h1>
+<p>Privacy-compliant user onboarding detection for automated email campaigns.</p>
+<p>The PaveKit SDK automatically detects user signups and activity on your website to trigger personalized onboarding email campaigns. Built with privacy-first principles and GDPR compliance.</p>
+<h2>Features</h2>
+<ul>
+<li>Automatic Signup Detection - Detects form submissions and OAuth completions</li>
+<li>Privacy-First - GDPR compliant with user consent management</li>
+<li>Security Focused - Never captures passwords or sensitive data</li>
+<li>Lightweight - Under 15KB gzipped</li>
+<li>Cross-Browser - Works in all modern browsers</li>
+<li>Mobile Friendly - Optimized for mobile devices</li>
+<li>Easy Integration - One script tag to get started</li>
+</ul>
+<h2>Quick Start</h2>
+<h3>1. Script Tag Integration (Recommended)</h3>
+<p>Add the SDK to your website's <code>&lt;head&gt;</code> section:</p>
+<pre class="prettyprint source lang-html"><code>&lt;script src=&quot;https://cdn.pavekit.com/sdk/pavekit.min.js&quot;
+        data-key=&quot;your-api-key&quot;
+        data-detect=&quot;signups,activity&quot;>
+&lt;/script>
+</code></pre>
+<p>That's it! The SDK will automatically:</p>
+<ul>
+<li>Detect user signups on your forms</li>
+<li>Track OAuth authentication completions</li>
+<li>Monitor user activity (with consent)</li>
+<li>Send data to trigger your email campaigns</li>
+</ul>
+<h3>2. NPM Installation</h3>
+<pre class="prettyprint source lang-bash"><code>npm install @pavekit/sdk
+</code></pre>
+<pre class="prettyprint source lang-javascript"><code>import PaveKitSDK from '@pavekit/sdk';
+
+const sdk = new PaveKitSDK();
+await sdk.init({
+  apiKey: 'your-api-key',
+  detect: ['signups', 'activity', 'oauth']
+});
+</code></pre>
+<h2>Configuration Options</h2>
+<h3>Script Tag Attributes</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data-key</code></td>
+<td><em>required</em></td>
+<td>Your PaveKit API key</td>
+</tr>
+<tr>
+<td><code>data-detect</code></td>
+<td><code>&quot;signups,activity&quot;</code></td>
+<td>Detection features to enable</td>
+</tr>
+<tr>
+<td><code>data-base-url</code></td>
+<td>Production URL</td>
+<td>API base URL (for development)</td>
+</tr>
+<tr>
+<td><code>data-debug</code></td>
+<td><code>false</code></td>
+<td>Enable debug logging</td>
+</tr>
+<tr>
+<td><code>data-privacy</code></td>
+<td><code>&quot;gdpr-compliant&quot;</code></td>
+<td>Privacy compliance mode</td>
+</tr>
+<tr>
+<td><code>data-consent-banner</code></td>
+<td><code>true</code></td>
+<td>Show consent banner</td>
+</tr>
+</tbody>
+</table>
+<h3>JavaScript Configuration</h3>
+<pre class="prettyprint source lang-javascript"><code>const config = {
+  apiKey: 'your-api-key',              // Required: Your API key
+  baseURL: 'https://api.pavekit.com',  // API endpoint
+  detect: ['signups', 'oauth', 'activity'], // Features to detect
+  debug: false,                         // Debug mode
+  privacy: 'gdpr-compliant',           // Privacy mode
+  consentBanner: true,                 // Show consent banner
+  autoCleanup: true                    // Clean sensitive URL params
+};
+
+await sdk.init(config);
+</code></pre>
+<h2>Detection Features</h2>
+<h3>Signup Detection (signups)</h3>
+<p>Automatically detects when users complete signup forms:</p>
+<ul>
+<li>Email field detection - Captures email addresses securely</li>
+<li>Password filtering - Never captures passwords or sensitive data</li>
+<li>Smart form recognition - Distinguishes signup from login forms</li>
+<li>Security validation - Validates all data before capture</li>
+</ul>
+<p>What gets detected:</p>
+<ul>
+<li>Registration forms with email + password</li>
+<li>Newsletter signups (if configured)</li>
+<li>Account creation forms</li>
+<li>Trial signup forms</li>
+</ul>
+<p>What gets filtered out:</p>
+<ul>
+<li>Login forms</li>
+<li>Password reset forms</li>
+<li>Contact forms</li>
+<li>Search forms</li>
+</ul>
+<h3>OAuth Detection (oauth)</h3>
+<p>Detects OAuth authentication completions:</p>
+<ul>
+<li>Provider detection - Google, GitHub, Microsoft, Facebook, etc.</li>
+<li>Token-safe - Never accesses OAuth tokens or secrets</li>
+<li>Real-time detection - Catches OAuth redirects immediately</li>
+<li>URL cleanup - Removes sensitive parameters from URLs</li>
+</ul>
+<p>Supported OAuth providers:</p>
+<ul>
+<li>Google (oauth_google)</li>
+<li>GitHub (oauth_github)</li>
+<li>Microsoft (oauth_microsoft)</li>
+<li>Facebook (oauth_facebook)</li>
+<li>Twitter (oauth_twitter)</li>
+<li>Custom OAuth providers</li>
+</ul>
+<h3>Activity Tracking (activity)</h3>
+<p>Privacy-compliant user engagement tracking:</p>
+<ul>
+<li>Time on page - Measures active engagement time</li>
+<li>Scroll depth - Tracks how far users scroll</li>
+<li>Click tracking - Counts safe interactions only</li>
+<li>Visibility detection - Respects page visibility</li>
+<li>Consent required - Only tracks with user permission</li>
+</ul>
+<p>Activity metrics:</p>
+<ul>
+<li>Session duration</li>
+<li>Active time (excludes idle time)</li>
+<li>Scroll percentage</li>
+<li>Safe click count</li>
+<li>Page views</li>
+</ul>
+<h2>Privacy and Security</h2>
+<h3>GDPR Compliance</h3>
+<p>The SDK is built for privacy compliance:</p>
+<pre class="prettyprint source lang-javascript"><code>// Check consent status
+const consent = sdk.getConsentStatus();
+console.log(consent.hasConsent);     // User has given consent
+console.log(consent.isOptedOut);     // User has opted out
+console.log(consent.doNotTrack);     // Browser DNT setting
+
+// Request consent manually
+const hasConsent = await sdk.requestConsent();
+
+// Opt out completely
+sdk.optOut();
+
+// Delete all user data
+sdk.deleteUserData();
+</code></pre>
+<h3>Security Features</h3>
+<ul>
+<li>No sensitive data - Never captures passwords, tokens, or PII</li>
+<li>Field filtering - Automatically filters sensitive form fields</li>
+<li>Input validation - Validates and sanitizes all captured data</li>
+<li>Secure transmission - HTTPS-only API communication</li>
+<li>Data minimization - Captures only necessary information</li>
+</ul>
+<h3>Data Protection</h3>
+<pre class="prettyprint source lang-javascript"><code>// What we NEVER capture:
+// - Passwords
+// - Credit card numbers
+// - OAuth tokens
+// - API keys
+// - Social security numbers
+// - Hidden form fields
+
+// What we DO capture (with consent):
+// - Email addresses
+// - Names (first/last)
+// - Company information
+// - Safe form data only
+</code></pre>
+<h2>API Reference</h2>
+<h3>SDK Methods</h3>
+<h4>init(config)</h4>
+<p>Initialize the SDK with configuration:</p>
+<pre class="prettyprint source lang-javascript"><code>await sdk.init({
+  apiKey: 'your-api-key',
+  detect: ['signups', 'activity'],
+  debug: true
+});
+</code></pre>
+<h4>trackSignup(data)</h4>
+<p>Manually track a signup event:</p>
+<pre class="prettyprint source lang-javascript"><code>await sdk.trackSignup({
+  email: 'user@example.com',
+  method: 'manual',
+  metadata: {
+    source: 'landing-page'
+  }
+});
+</code></pre>
+<h4>updateUser(data)</h4>
+<p>Update user information such as name. This allows you to personalize onboarding emails with the user's actual name instead of extracting it from their email address.</p>
+<pre class="prettyprint source lang-javascript"><code>await sdk.updateUser({
+  email: 'user@example.com',
+  name: 'John Smith'
+});
+</code></pre>
+<p>Parameters:</p>
+<ul>
+<li><code>email</code> (required) - User's email address to identify the user</li>
+<li><code>name</code> (optional) - User's display name for email personalization</li>
+</ul>
+<p>The name will be used in email templates via the <code>{{user_name}}</code> variable.</p>
+<h4>trackConversion(data)</h4>
+<p>Track conversion events to stop email campaigns:</p>
+<pre class="prettyprint source lang-javascript"><code>await sdk.trackConversion({
+  email: 'user@example.com',
+  type: 'purchase',
+  value: 99.99,
+  currency: 'USD'
+});
+</code></pre>
+<h4>setUserEmail(email)</h4>
+<p>Set user email for activity tracking:</p>
+<pre class="prettyprint source lang-javascript"><code>sdk.setUserEmail('user@example.com');
+</code></pre>
+<h4>getStatus()</h4>
+<p>Get current SDK status:</p>
+<pre class="prettyprint source lang-javascript"><code>const status = sdk.getStatus();
+console.log(status);
+// {
+//   version: '1.0.0',
+//   initialized: true,
+//   detecting: true,
+//   hasConsent: true,
+//   detectors: { ... }
+// }
+</code></pre>
+<h3>Privacy Methods</h3>
+<h4>getConsentStatus()</h4>
+<p>Check privacy consent status:</p>
+<pre class="prettyprint source lang-javascript"><code>const consent = sdk.getConsentStatus();
+console.log(consent);
+// {
+//   hasConsent: true,
+//   isOptedOut: false,
+//   consentTimestamp: '2023-...',
+//   doNotTrack: false
+// }
+</code></pre>
+<h4>optOut() / optIn()</h4>
+<p>Manage user privacy preferences:</p>
+<pre class="prettyprint source lang-javascript"><code>// Opt out of all tracking
+sdk.optOut();
+
+// Opt back in (requests consent)
+const hasConsent = await sdk.optIn();
+</code></pre>
+<h2>Template Variables</h2>
+<p>When users are tracked by the SDK, their information can be used in email templates. The following variables are available:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{{user_email}}</code></td>
+<td>User's email address</td>
+<td>Detected from signup form or OAuth</td>
+</tr>
+<tr>
+<td><code>{{user_name}}</code></td>
+<td>User's display name</td>
+<td>Set via <code>updateUser()</code> or extracted from email</td>
+</tr>
+<tr>
+<td><code>{{signup_date}}</code></td>
+<td>Date when user signed up</td>
+<td>Automatic</td>
+</tr>
+<tr>
+<td><code>{{company_name}}</code></td>
+<td>Your company name</td>
+<td>Set in PaveKit Profile settings</td>
+</tr>
+<tr>
+<td><code>{{discount_code}}</code></td>
+<td>Discount code from template</td>
+<td>Template configuration</td>
+</tr>
+<tr>
+<td><code>{{discount_value}}</code></td>
+<td>Discount percentage</td>
+<td>Template configuration</td>
+</tr>
+<tr>
+<td><code>{{product_name}}</code></td>
+<td>Your product name</td>
+<td>Set in PaveKit Profile settings</td>
+</tr>
+<tr>
+<td><code>{{support_email}}</code></td>
+<td>Your support email</td>
+<td>Your account email</td>
+</tr>
+</tbody>
+</table>
+<h3>Updating User Name</h3>
+<p>To personalize emails with the user's actual name (instead of extracting from email), call <code>updateUser()</code> after signup:</p>
+<pre class="prettyprint source lang-javascript"><code>// After detecting a signup or getting user info from your backend
+await sdk.updateUser({
+  email: 'john.smith@example.com',
+  name: 'John Smith'
+});
+</code></pre>
+<p>This is especially useful when:</p>
+<ul>
+<li>You have the user's name from an OAuth provider</li>
+<li>The user provides their name in a profile form</li>
+<li>You want more personalized onboarding emails</li>
+</ul>
+<h2>Advanced Usage</h2>
+<h3>Custom Event Listeners</h3>
+<p>Listen for SDK events:</p>
+<pre class="prettyprint source lang-javascript"><code>// SDK initialized
+window.addEventListener('pavekit-initialized', (e) => {
+  console.log('SDK ready:', e.detail.version);
+});
+
+// Detection started
+window.addEventListener('pavekit-detectionStarted', (e) => {
+  console.log('Detecting:', e.detail.detectors);
+});
+
+// Consent changed
+window.addEventListener('pavekit-consent', (e) => {
+  console.log('Consent:', e.detail.type);
+});
+</code></pre>
+<h3>Manual Detection Control</h3>
+<p>Control detection manually:</p>
+<pre class="prettyprint source lang-javascript"><code>// Start detection
+sdk.startDetection();
+
+// Stop detection
+sdk.stopDetection();
+
+// Update configuration
+sdk.updateConfig({
+  detect: ['signups'], // Only detect signups
+  debug: true
+});
+</code></pre>
+<h3>Custom Privacy Settings</h3>
+<p>Customize privacy behavior:</p>
+<pre class="prettyprint source lang-javascript"><code>await sdk.init({
+  apiKey: 'your-api-key',
+  consentBanner: true,
+  privacy: 'gdpr-compliant'
+});
+
+// Custom consent request
+const hasConsent = await sdk.privacyManager.requestConsent({
+  message: 'We use cookies to improve your experience.',
+  privacyUrl: '/privacy-policy',
+  timeout: 30000
+});
+</code></pre>
+<h3>Debug Mode</h3>
+<p>Enable debugging for development:</p>
+<pre class="prettyprint source lang-javascript"><code>// Via config
+await sdk.init({
+  apiKey: 'your-api-key',
+  debug: true
+});
+
+// Get debug information
+const debugInfo = sdk.getDebugInfo();
+console.log(debugInfo);
+</code></pre>
+<h2>Integration Examples</h2>
+<h3>React Integration</h3>
+<pre class="prettyprint source lang-jsx"><code>import { useEffect } from 'react';
+import PaveKitSDK from '@pavekit/sdk';
+
+function App() {
+  useEffect(() => {
+    const initPaveKit = async () => {
+      const sdk = new PaveKitSDK();
+      await sdk.init({
+        apiKey: process.env.REACT_APP_PAVEKIT_KEY,
+        detect: ['signups', 'activity']
+      });
+      
+      // Make SDK available globally
+      window.pavekit = sdk;
+    };
+    
+    initPaveKit();
+  }, []);
+
+  return &lt;div>Your app content&lt;/div>;
+}
+</code></pre>
+<h3>Vue Integration</h3>
+<pre class="prettyprint source lang-vue"><code>&lt;script>
+import PaveKitSDK from '@pavekit/sdk';
+
+export default {
+  async mounted() {
+    const sdk = new PaveKitSDK();
+    await sdk.init({
+      apiKey: process.env.VUE_APP_PAVEKIT_KEY,
+      detect: ['signups', 'oauth', 'activity']
+    });
+    
+    this.$pavekit = sdk;
+  }
+}
+&lt;/script>
+</code></pre>
+<h3>Next.js Integration</h3>
+<pre class="prettyprint source lang-javascript"><code>// pages/_app.js
+import { useEffect } from 'react';
+
+function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    // Load SDK after hydration
+    if (typeof window !== 'undefined') {
+      import('@pavekit/sdk').then(async ({ default: PaveKitSDK }) => {
+        const sdk = new PaveKitSDK();
+        await sdk.init({
+          apiKey: process.env.NEXT_PUBLIC_PAVEKIT_KEY,
+          detect: ['signups', 'activity']
+        });
+      });
+    }
+  }, []);
+
+  return &lt;Component {...pageProps} />;
+}
+</code></pre>
+<h3>Capturing User Name from OAuth</h3>
+<p>When using OAuth providers like Google, you often receive the user's name. Pass it to PaveKit:</p>
+<pre class="prettyprint source lang-javascript"><code>// After OAuth callback
+async function handleOAuthSuccess(oauthUser) {
+  // Track the signup
+  await window.pavekit.trackSignup({
+    email: oauthUser.email,
+    method: 'oauth_google'
+  });
+  
+  // Update with the user's actual name from OAuth
+  if (oauthUser.name) {
+    await window.pavekit.updateUser({
+      email: oauthUser.email,
+      name: oauthUser.name
+    });
+  }
+}
+</code></pre>
+<h3>E-commerce Integration</h3>
+<p>Track purchases to stop onboarding campaigns:</p>
+<pre class="prettyprint source lang-javascript"><code>// After successful purchase
+await sdk.trackConversion({
+  email: customerEmail,
+  type: 'purchase',
+  value: orderTotal,
+  currency: 'USD',
+  metadata: {
+    orderId: order.id,
+    products: order.items.map(item => item.name)
+  }
+});
+</code></pre>
+<h2>Troubleshooting</h2>
+<h3>Common Issues</h3>
+<p>SDK not initializing:</p>
+<pre class="prettyprint source lang-javascript"><code>// Check API key is set
+const script = document.querySelector('script[src*=&quot;pavekit&quot;]');
+console.log(script.dataset.key); // Should show your API key
+
+// Check console for errors
+sdk.getDebugInfo(); // Shows detailed status
+</code></pre>
+<p>Forms not being detected:</p>
+<pre class="prettyprint source lang-javascript"><code>// Check detector status
+const status = sdk.getStatus();
+console.log(status.detectors.form); // Should show isActive: true
+
+// Check form structure
+const forms = sdk.detectors.form.getDetectedForms();
+console.log(forms); // Shows detected forms
+</code></pre>
+<p>Privacy consent issues:</p>
+<pre class="prettyprint source lang-javascript"><code>// Check consent status
+const consent = sdk.getConsentStatus();
+console.log(consent);
+
+// Force consent for testing (development only)
+sdk.privacyManager.grantConsent('explicit');
+</code></pre>
+<h3>Debug Mode</h3>
+<p>Enable debug mode for detailed logging:</p>
+<pre class="prettyprint source lang-html"><code>&lt;script src=&quot;https://cdn.pavekit.com/sdk/pavekit.min.js&quot;
+        data-key=&quot;your-api-key&quot;
+        data-debug=&quot;true&quot;>
+&lt;/script>
+</code></pre>
+<h3>Browser Support</h3>
+<p>Supported browsers:</p>
+<ul>
+<li>Chrome 60+</li>
+<li>Firefox 55+</li>
+<li>Safari 12+</li>
+<li>Edge 79+</li>
+</ul>
+<p>Required features:</p>
+<ul>
+<li>fetch() API</li>
+<li>Promise support</li>
+<li>addEventListener()</li>
+<li>querySelector()</li>
+</ul>
+<h2>Testing</h2>
+<h3>Test Page</h3>
+<p>Create a test page to verify SDK functionality:</p>
+<pre class="prettyprint source lang-html"><code>&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;script src=&quot;https://cdn.pavekit.com/sdk/pavekit.min.js&quot;
+            data-key=&quot;your-test-api-key&quot;
+            data-debug=&quot;true&quot;>
+    &lt;/script>
+&lt;/head>
+&lt;body>
+    &lt;h1>SDK Test Page&lt;/h1>
+    
+    &lt;!-- Test signup form -->
+    &lt;form id=&quot;signup-form&quot; action=&quot;/signup&quot; method=&quot;post&quot;>
+        &lt;input type=&quot;text&quot; name=&quot;name&quot; placeholder=&quot;Name&quot;>
+        &lt;input type=&quot;email&quot; name=&quot;email&quot; placeholder=&quot;Email&quot; required>
+        &lt;input type=&quot;password&quot; name=&quot;password&quot; placeholder=&quot;Password&quot; required>
+        &lt;button type=&quot;submit&quot;>Sign Up&lt;/button>
+    &lt;/form>
+    
+    &lt;script>
+        // Check SDK status
+        setTimeout(() => {
+            if (window.PaveKit) {
+                console.log('SDK Status:', window.PaveKit.getStatus());
+            }
+        }, 1000);
+        
+        // Test updating user name after form submission
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            const formData = new FormData(e.target);
+            const name = formData.get('name');
+            const email = formData.get('email');
+            
+            if (name && email && window.PaveKit) {
+                await window.PaveKit.updateUser({ email, name });
+            }
+        });
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+</code></pre>
+<h3>Manual Testing</h3>
+<p>Test SDK functions in browser console:</p>
+<pre class="prettyprint source lang-javascript"><code>// Check if SDK loaded
+console.log(window.PaveKit);
+
+// Get status
+window.PaveKit.getStatus();
+
+// Test manual tracking
+await window.PaveKit.trackSignup({
+  email: 'test@example.com',
+  method: 'manual'
+});
+
+// Test updating user info
+await window.PaveKit.updateUser({
+  email: 'test@example.com',
+  name: 'Test User'
+});
+
+// Check activity stats
+window.PaveKit.detectors.activity.getActivityStats();
+</code></pre>
+<h2>SDK Endpoints</h2>
+<p>The SDK communicates with the following backend endpoints:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/onboarding/sdk/signup</code></td>
+<td>POST</td>
+<td>Register a new user signup</td>
+</tr>
+<tr>
+<td><code>/api/onboarding/sdk/activity</code></td>
+<td>POST</td>
+<td>Track user activity heartbeat</td>
+</tr>
+<tr>
+<td><code>/api/onboarding/sdk/conversion</code></td>
+<td>POST</td>
+<td>Track conversion events</td>
+</tr>
+<tr>
+<td><code>/api/onboarding/sdk/user-info</code></td>
+<td>POST</td>
+<td>Update user information (name)</td>
+</tr>
+<tr>
+<td><code>/api/onboarding/sdk/validate</code></td>
+<td>GET</td>
+<td>Validate API key</td>
+</tr>
+</tbody>
+</table>
+<h2>Links</h2>
+<ul>
+<li>Documentation: https://docs.pavekit.com</li>
+<li>Dashboard: https://app.pavekit.com</li>
+<li>Support: https://pavekit.com/support</li>
+</ul>
+<h2>License</h2>
+<p>MIT License - see LICENSE file for details.</p>
+<hr>
+<p>PaveKit - Automated User Onboarding</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.5</a> on Fri Dec 12 2025 08:00:38 GMT-0800 (Pacific Standard Time) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

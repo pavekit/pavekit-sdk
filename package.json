@@ -58,6 +58,8 @@
     "html-webpack-plugin": "^5.5.3",
     "copy-webpack-plugin": "^11.0.0",
     "jsdoc": "^4.0.2",
+    "minami": "^1.2.3",
+    "taffydb": "^2.7.3",
     "rimraf": "^5.0.5",
     "bundlesize": "^0.18.1"
   },
