@@ -110,9 +110,6 @@
     "transformIgnorePatterns": [
       "node_modules/(?!(minami)/)"
     ],
-    "extensionsToTreatAsEsm": [
-      ".js"
-    ],
     "globals": {
       "NODE_OPTIONS": "--experimental-vm-modules"
     }

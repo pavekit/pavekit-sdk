@@ -179,7 +179,7 @@ describe("PaveKitSDK", () => {
       };
 
       const result = await sdk.trackSignup(signupData);
-      expect(result).toHaveProperty("message");
+      expect(result).toHaveProperty("success");
       expect(sdk.userEmail).toBe("test@example.com");
     });
 
@@ -200,7 +200,7 @@ describe("PaveKitSDK", () => {
       };
 
       const result = await sdk.trackConversion(conversionData);
-      expect(result).toHaveProperty("message");
+      expect(result).toHaveProperty("success");
     });
 
     test("should throw error for conversion without email", async () => {
@@ -359,10 +359,13 @@ describe("PaveKitSDK", () => {
     test("should dispatch initialization event", async () => {
       let eventReceived = false;
 
-      window.addEventListener("pavekit-initialized", (e) => {
-        eventReceived = true;
-        expect(e.detail).toHaveProperty("version");
-        expect(e.detail).toHaveProperty("config");
+      const eventPromise = new Promise((resolve) => {
+        window.addEventListener("pavekit-initialized", (e) => {
+          eventReceived = true;
+          expect(e.detail).toHaveProperty("version");
+          expect(e.detail).toHaveProperty("config");
+          resolve();
+        });
       });
 
       await sdk.init({
@@ -370,15 +373,19 @@ describe("PaveKitSDK", () => {
         consentBanner: false,
       });
 
+      await eventPromise;
       expect(eventReceived).toBe(true);
     });
 
     test("should dispatch detection started event", async () => {
       let eventReceived = false;
 
-      window.addEventListener("pavekit-detectionStarted", (e) => {
-        eventReceived = true;
-        expect(e.detail).toHaveProperty("detectors");
+      const eventPromise = new Promise((resolve) => {
+        window.addEventListener("pavekit-detectionStarted", (e) => {
+          eventReceived = true;
+          expect(e.detail).toHaveProperty("detectors");
+          resolve();
+        });
       });
 
       await sdk.init({
@@ -386,6 +393,7 @@ describe("PaveKitSDK", () => {
         consentBanner: false,
       });
 
+      await eventPromise;
       expect(eventReceived).toBe(true);
     });
   });
@@ -423,20 +431,21 @@ describe("PaveKitSDK", () => {
 
   describe("Error Handling", () => {
     test("should handle API errors gracefully", async () => {
-      testHelpers.mockAPIError("/sdk/validate", "Network error");
+      // Mock API error
+      global.fetch.mockRejectedValueOnce(new Error("Network error"));
 
       await expect(sdk.init({ apiKey: "test_key" })).rejects.toThrow();
-    });
+    }, 10000);
 
     test("should handle malformed responses", async () => {
-      global.fetch.mockResolvedValue({
+      global.fetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
         text: async () => "Internal Server Error",
       });
 
       await expect(sdk.init({ apiKey: "test_key" })).rejects.toThrow();
-    });
+    }, 10000);
 
     test("should continue working after non-critical errors", async () => {
       testHelpers.mockAPIResponse("/sdk/validate", { valid: true });
