@@ -34,12 +34,14 @@ jobs:
         run: npm ci
 
       - name: Install JSDoc dependencies
-        run: npm install -g jsdoc minami jsdoc-to-markdown
+        run: |
+          npm install -g jsdoc jsdoc-to-markdown
+          npm install minami
 
       - name: Generate HTML documentation
         run: |
           # Generate HTML docs
-          ./docs.sh --output=./docs --format=html --type=jsdoc
+          ./docs.sh --output=./docs --format=html --type=jsdoc --template node_modules/minami
 
       - name: Generate Markdown documentation
         run: |
