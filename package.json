@@ -116,7 +116,6 @@
     "globals": {
       "NODE_OPTIONS": "--experimental-vm-modules"
     }
-  }
   },
   "bundlesize": [
     {
