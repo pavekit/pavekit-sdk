@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  OUTPUT_DIR: ./sdk/docs
+  OUTPUT_DIR: ./docs
 
 jobs:
   generate:
