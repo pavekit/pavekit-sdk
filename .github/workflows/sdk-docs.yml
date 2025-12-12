@@ -3,7 +3,7 @@ name: Generate SDK Documentation
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - "sdk/**"
   workflow_dispatch:
@@ -61,7 +61,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: generate
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     permissions:
       contents: read
       pages: write

@@ -3,13 +3,13 @@ name: Build and Push Docker Images
 on:
   push:
     branches:
-      - main
+      - master
       - develop
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
-      - main
+      - master
       - develop
   workflow_dispatch:
 
@@ -143,10 +143,10 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.image }}:${{ github.ref_name }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          format: "sarif"
+          output: "trivy-results.sarif"
 
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
