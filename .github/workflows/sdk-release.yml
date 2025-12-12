@@ -227,7 +227,7 @@ jobs:
 
             <!-- Specific version -->
             <script src="https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js"></script>
-```
+            ```
 
             ### CDN URLs
             - Latest: https://cdn.pavekit.com/latest/pavekit-sdk.min.js
