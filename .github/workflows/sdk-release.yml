@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "sdk/**"
+      - "src/**"
   workflow_dispatch:
     inputs:
       version:
@@ -42,27 +42,22 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: "./sdk/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Run tests
-        working-directory: ./sdk
         run: npm test
 
       - name: Build SDK
-        working-directory: ./sdk
         run: npm run build
 
       - name: Check bundle size
-        working-directory: ./sdk
         run: npm run size
 
       - name: Get version info
         id: version
-        working-directory: ./sdk
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
 
@@ -115,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sdk-dist-${{ steps.version.outputs.new-version }}
-          path: ./sdk/dist/
+          path: ./dist/
           retention-days: 7
 
   deploy:
@@ -134,7 +129,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: sdk-dist-${{ steps.version.outputs.new-version }}
-          path: ./sdk/dist/
+          path: ./dist/
 
       - name: Install wrangler
         run: npm install -g wrangler
@@ -148,7 +143,7 @@ jobs:
         run: |
           # Create version directory
           mkdir -p versioned
-          cp ./sdk/dist/pavekit.min.js ./versioned/
+          cp ./dist/pavekit.min.js ./versioned/
 
           # Upload versioned file
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
@@ -195,7 +190,6 @@ jobs:
           node-version: "18"
 
       - name: Update version and push tag
-        working-directory: ./sdk
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
@@ -204,7 +198,7 @@ jobs:
           npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
 
           # Commit version change
-          git add ./sdk/package.json
+          git add ./package.json
           git commit -m "chore: bump SDK version to ${{ needs.build.outputs.new-version }}"
 
           # Create and push tag
@@ -256,22 +250,18 @@ jobs:
           node-version: "18"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
-          cache-dependency-path: "./sdk/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Update version
-        working-directory: ./sdk
         run: npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
 
       - name: Build types
-        working-directory: ./sdk
         run: npm run build:types
 
       - name: Publish to NPM
-        working-directory: ./sdk
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

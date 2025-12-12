@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "sdk/**"
+      - "src/**"
   workflow_dispatch:
 
 env:
@@ -28,23 +28,20 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: "./sdk/package-lock.json"
+          cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
-        working-directory: ./sdk
         run: npm ci
 
       - name: Install JSDoc dependencies
         run: npm install -g jsdoc minami jsdoc-to-markdown
 
       - name: Generate HTML documentation
-        working-directory: ./sdk
         run: |
           # Generate HTML docs
           ./docs.sh --output=./docs --format=html --type=jsdoc
 
       - name: Generate Markdown documentation
-        working-directory: ./sdk
         run: |
           # Generate Markdown docs
           ./docs.sh --output=./docs-md --format=markdown --type=jsdoc
@@ -54,8 +51,8 @@ jobs:
         with:
           name: sdk-docs
           path: |
-            ./sdk/docs
-            ./sdk/docs-md
+            ./docs
+            ./docs-md
           retention-days: 30
 
   deploy:
@@ -82,12 +79,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: sdk-docs
-          path: ./sdk/docs
+          path: ./docs
 
       - name: Create index file
         run: |
           # Create index page for documentation
-          cat > ./sdk/docs/index.html << 'EOF'
+          cat > ./docs/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -203,7 +200,7 @@ jobs:
       - name: Upload to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./sdk/docs
+          path: ./docs
 
       - name: Deploy to GitHub Pages
         id: deployment
