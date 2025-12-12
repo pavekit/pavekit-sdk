@@ -36,7 +36,6 @@ jobs:
       - name: Install JSDoc dependencies
         run: |
           npm install -g jsdoc jsdoc-to-markdown
-          npm install minami
 
       - name: Generate HTML documentation
         run: |
