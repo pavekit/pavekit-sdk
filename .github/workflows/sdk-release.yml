@@ -102,7 +102,6 @@ jobs:
 
       - name: Update version in package.json
         if: github.event_name == 'workflow_dispatch'
-        working-directory: ./sdk
         run: |
           npm version ${{ steps.version.outputs.new-version }} --no-git-tag-version
 
@@ -146,7 +145,7 @@ jobs:
           cp ./dist/pavekit.min.js ./versioned/
 
           # Upload versioned file
-          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ steps.version.outputs.new-version }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
 
           # Upload as latest
           wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/latest/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
@@ -155,8 +154,8 @@ jobs:
           MAJOR_VERSION=${{ needs.build.outputs.major }}
           MINOR_VERSION="${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}"
 
-          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v$MAJOR_VERSION/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
-          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v$MINOR_VERSION/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ steps.version.outputs.major }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
 
       - name: Update versions.json
         run: |
@@ -164,7 +163,7 @@ jobs:
           wrangler r2 object get ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json > existing-versions.json || echo '{}' > existing-versions.json
 
           # Update with new version
-          NEW_VERSION='${{ needs.build.outputs.new-version }}'
+          NEW_VERSION='${{ steps.version.outputs.new-version }}'
           jq --arg version "$NEW_VERSION" '.versions += [$version] | .versions |= unique | .latest = $version' existing-versions.json > new-versions.json
 
           # Upload updated versions file
@@ -202,7 +201,7 @@ jobs:
           git commit -m "chore: bump SDK version to ${{ needs.build.outputs.new-version }}"
 
           # Create and push tag
-          git tag ${{ needs.build.outputs.version-tag }}
+          git tag ${{ steps.version.outputs.version-tag }}
           git push origin master --tags
 
       - name: Create GitHub Release
@@ -210,8 +209,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.build.outputs.version-tag }}
-          release_name: PaveKit SDK v${{ needs.build.outputs.new-version }}
+          tag_name: ${{ steps.version.outputs.version-tag }}
+          release_name: PaveKit SDK v${{ steps.version.outputs.new-version }}
           body: |
             ## Changes in v${{ needs.build.outputs.new-version }}
 
@@ -221,14 +220,14 @@ jobs:
             <script src="https://cdn.pavekit.com/latest/pavekit-sdk.min.js"></script>
 
             <!-- Specific version -->
-            <script src="https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js"></script>
+            <script src="https://cdn.pavekit.com/v${{ steps.version.outputs.new-version }}/pavekit-sdk.min.js"></script>
             ```
 
             ### CDN URLs
             - Latest: https://cdn.pavekit.com/latest/pavekit-sdk.min.js
-            - Version ${{ needs.build.outputs.new-version }}: https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js
-            - Major version (v${{ needs.build.outputs.major }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}/pavekit-sdk.min.js
-            - Minor version (v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}/pavekit-sdk.min.js
+            - Version ${{ steps.version.outputs.new-version }}: https://cdn.pavekit.com/v${{ steps.version.outputs.new-version }}/pavekit-sdk.min.js
+            - Major version (v${{ steps.version.outputs.major }}): https://cdn.pavekit.com/v${{ steps.version.outputs.major }}/pavekit-sdk.min.js
+            - Minor version (v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}): https://cdn.pavekit.com/v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}/pavekit-sdk.min.js
           draft: false
           prerelease: false
 
@@ -253,10 +252,11 @@ jobs:
           cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
+        working-directory: ./
         run: npm ci
 
       - name: Update version
-        run: npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
+        run: npm version ${{ steps.version.outputs.new-version }} --no-git-tag-version
 
       - name: Build types
         run: npm run build:types
