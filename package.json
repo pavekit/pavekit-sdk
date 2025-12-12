@@ -103,16 +103,20 @@
     "transform": {
       "^.+\\.js$": "babel-jest"
     },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(minami)/)"
-    ],
     "moduleFileExtensions": [
       "js",
       "json"
     ],
-    "testPathIgnorePatterns": [
-      "<rootDir>/node_modules/"
-    ]
+    "transformIgnorePatterns": [
+      "node_modules/(?!(minami)/)"
+    ],
+    "extensionsToTreatAsEsm": [
+      ".js"
+    ],
+    "globals": {
+      "NODE_OPTIONS": "--experimental-vm-modules"
+    }
+  }
   },
   "bundlesize": [
     {

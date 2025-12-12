@@ -5,7 +5,8 @@
       {
         "targets": {
           "node": "current"
-        }
+        },
+        "modules": "commonjs"
       }
     ]
   ],
@@ -17,7 +18,8 @@
           {
             "targets": {
               "node": "current"
-            }
+            },
+            "modules": "commonjs"
           }
         ]
       ]

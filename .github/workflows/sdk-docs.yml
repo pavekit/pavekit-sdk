@@ -41,7 +41,7 @@ jobs:
       - name: Generate HTML documentation
         run: |
           # Generate HTML docs
-          ./docs.sh --output=./docs --format=html --type=jsdoc --template node_modules/minami
+          ./docs.sh --output=./docs --format=html --type=jsdoc
 
       - name: Generate Markdown documentation
         run: |

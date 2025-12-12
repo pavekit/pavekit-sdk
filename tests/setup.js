@@ -4,7 +4,7 @@
  */
 
 // Mock DOM environment
-import 'jest-environment-jsdom';
+require('jest-environment-jsdom');
 
 // Global test utilities and mocks
 global.fetch = jest.fn();
