@@ -226,14 +226,14 @@ jobs:
             <script src="https://cdn.pavekit.com/latest/pavekit-sdk.min.js"></script>
 
             <!-- Specific version -->
-            <script src="https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js"></script>
+            <script src="https://cdn.pavekit.com/v${{ '' }}${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js"></script>
             ```
 
             ### CDN URLs
             - Latest: https://cdn.pavekit.com/latest/pavekit-sdk.min.js
-            - Version ${{ needs.build.outputs.new-version }}: https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js
-            - Major version (v${{ needs.build.outputs.major }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}/pavekit-sdk.min.js
-            - Minor version (v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}/pavekit-sdk.min.js
+            - Version ${{ '' }}${{ needs.build.outputs.new-version }}: https://cdn.pavekit.com/v${{ '' }}${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js
+            - Major version (v${{ '' }}${{ needs.build.outputs.major }}): https://cdn.pavekit.com/v${{ '' }}${{ needs.build.outputs.major }}/pavekit-sdk.min.js
+            - Minor version (v${{ '' }}${{ needs.build.outputs.major }}.${{ '' }}${{ needs.build.outputs.minor }}): https://cdn.pavekit.com/v${{ '' }}${{ needs.build.outputs.major }}.${{ '' }}${{ needs.build.outputs.minor }}/pavekit-sdk.min.js
           draft: false
           prerelease: false
 
