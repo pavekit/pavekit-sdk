@@ -1,0 +1,277 @@
+name: Build and Release SDK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "sdk/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (leave empty for auto-increment)"
+        required: false
+        type: string
+      release_type:
+        description: "Release type"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  CLOUDFLARE_R2_BUCKET: ${{ secrets.CLOUDFLARE_R2_BUCKET || 'pavekit-sdk' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: "./sdk/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./sdk
+        run: npm test
+
+      - name: Build SDK
+        working-directory: ./sdk
+        run: npm run build
+
+      - name: Check bundle size
+        working-directory: ./sdk
+        run: npm run size
+
+      - name: Get version info
+        id: version
+        working-directory: ./sdk
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            NEW_VERSION="${{ github.event.inputs.version }}"
+          else
+            # Auto-increment based on release_type
+            RELEASE_TYPE="${{ github.event.inputs.release_type || 'patch' }}"
+            IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+            MAJOR="${VERSION_PARTS[0]}"
+            MINOR="${VERSION_PARTS[1]}"
+            PATCH="${VERSION_PARTS[2]}"
+
+            case $RELEASE_TYPE in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version-tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Extract major and minor for later use
+          IFS='.' read -ra VERSION_PARTS <<< "$NEW_VERSION"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+
+      - name: Update version in package.json
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: ./sdk
+        run: |
+          npm version ${{ steps.version.outputs.new-version }} --no-git-tag-version
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dist-${{ steps.version.outputs.new-version }}
+          path: ./sdk/dist/
+          retention-days: 7
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-dist-${{ steps.version.outputs.new-version }}
+          path: ./sdk/dist/
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Authenticate with Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Deploy to Cloudflare R2
+        run: |
+          # Create version directory
+          mkdir -p versioned
+          cp ./sdk/dist/pavekit.min.js ./versioned/
+
+          # Upload versioned file
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+
+          # Upload as latest
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/latest/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+
+          # Create semantic version aliases
+          MAJOR_VERSION=${{ needs.build.outputs.major }}
+          MINOR_VERSION="${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}"
+
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v$MAJOR_VERSION/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/v$MINOR_VERSION/pavekit-sdk.min.js --file=./versioned/pavekit.min.js
+
+      - name: Update versions.json
+        run: |
+          # Get existing versions
+          wrangler r2 object get ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json > existing-versions.json || echo '{}' > existing-versions.json
+
+          # Update with new version
+          NEW_VERSION='${{ needs.build.outputs.new-version }}'
+          jq --arg version "$NEW_VERSION" '.versions += [$version] | .versions |= unique | .latest = $version' existing-versions.json > new-versions.json
+
+          # Upload updated versions file
+          wrangler r2 object put ${{ env.CLOUDFLARE_R2_BUCKET }}/versions.json --file=new-versions.json
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build, deploy]
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Update version and push tag
+        working-directory: ./sdk
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          # Update version in package.json
+          npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
+
+          # Commit version change
+          git add ./sdk/package.json
+          git commit -m "chore: bump SDK version to ${{ needs.build.outputs.new-version }}"
+
+          # Create and push tag
+          git tag ${{ needs.build.outputs.version-tag }}
+          git push origin main --tags
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.build.outputs.version-tag }}
+          release_name: PaveKit SDK v${{ needs.build.outputs.new-version }}
+          body: |
+            ## Changes in v${{ needs.build.outputs.new-version }}
+
+            ### Installation
+            ```html
+            <!-- Latest version -->
+            <script src="https://cdn.pavekit.com/latest/pavekit-sdk.min.js"></script>
+
+            <!-- Specific version -->
+            <script src="https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js"></script>
+            ```
+
+            ### CDN URLs
+            - Latest: https://cdn.pavekit.com/latest/pavekit-sdk.min.js
+            - Version ${{ needs.build.outputs.new-version }}: https://cdn.pavekit.com/v${{ needs.build.outputs.new-version }}/pavekit-sdk.min.js
+            - Major version (v${{ needs.build.outputs.major }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}/pavekit-sdk.min.js
+            - Minor version (v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}): https://cdn.pavekit.com/v${{ needs.build.outputs.major }}.${{ needs.build.outputs.minor }}/pavekit-sdk.min.js
+          draft: false
+          prerelease: false
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: [build, deploy]
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+          cache-dependency-path: "./sdk/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./sdk
+        run: npm ci
+
+      - name: Update version
+        working-directory: ./sdk
+        run: npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
+
+      - name: Build types
+        working-directory: ./sdk
+        run: npm run build:types
+
+      - name: Publish to NPM
+        working-directory: ./sdk
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

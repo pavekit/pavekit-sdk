@@ -1,0 +1,113 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Onboardly SDK Test Page</title><style>body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+        }
+        input, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .oauth-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .oauth-btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .google { background: #db4437; color: white; }
+        .github { background: #333; color: white; }
+        .microsoft { background: #0078d4; color: white; }
+        .status {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .controls button {
+            padding: 8px 16px;
+            font-size: 12px;
+            background: #6c757d;
+        }
+        .controls button:hover {
+            background: #545b62;
+        }
+        .activity-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }</style><script defer="defer" src="pavekit.min.js"></script></head><body><h1>🚀 Onboardly SDK Test Environment</h1><div class="container"><h2>SDK Status</h2><div id="sdk-status" class="status">Loading SDK...</div><div class="controls"><button onclick="refreshStatus()">Refresh Status</button> <button onclick="showDebugInfo()">Debug Info</button> <button onclick="testConnection()">Test Connection</button> <button onclick="optOut()">Opt Out</button> <button onclick="optIn()">Opt In</button> <button onclick="deleteData()">Delete Data</button></div></div><div class="form-section"><h2>📝 Test Signup Forms</h2><h3>Standard Signup Form</h3><form id="signup-form" action="/signup" method="post"><input name="firstName" placeholder="First Name" required> <input name="lastName" placeholder="Last Name" required> <input type="email" name="email" placeholder="Email Address" required> <input type="password" name="password" placeholder="Password" required> <input name="company" placeholder="Company Name"> <button type="submit">Sign Up</button></form><h3>Newsletter Signup (Should NOT be detected)</h3><form id="newsletter-form" action="/newsletter" method="post"><input type="email" name="newsletter_email" placeholder="Your Email" required> <button type="submit">Subscribe to Newsletter</button></form><h3>Contact Form (Should NOT be detected)</h3><form id="contact-form" action="/contact" method="post"><input name="name" placeholder="Your Name" required> <input type="email" name="contact_email" placeholder="Email Address" required> <textarea name="message" placeholder="Your Message" rows="4"></textarea> <button type="submit">Send Message</button></form></div><div class="form-section"><h2>🔐 OAuth Flow Testing</h2><p>Click buttons to simulate OAuth returns:</p><div class="oauth-buttons"><a href="#" class="oauth-btn google" onclick="simulateOAuth('google')">Google OAuth</a> <a href="#" class="oauth-btn github" onclick="simulateOAuth('github')">GitHub OAuth</a> <a href="#" class="oauth-btn microsoft" onclick="simulateOAuth('microsoft')">Microsoft OAuth</a></div><p><small>These simulate OAuth callback URLs with authorization codes</small></p></div><div class="form-section"><h2>📊 Manual Event Tracking</h2><div style="display: flex; gap: 20px; flex-wrap: wrap;"><div><h4>Track Signup</h4><input type="email" id="manual-email" placeholder="user@example.com"> <select id="signup-method"><option value="manual">Manual</option><option value="form">Form</option><option value="oauth_google">Google OAuth</option><option value="oauth_github">GitHub OAuth</option></select> <button onclick="trackManualSignup()">Track Signup</button></div><div><h4>Track Conversion</h4><input type="email" id="conversion-email" placeholder="user@example.com"> <input type="number" id="conversion-value" placeholder="Value (e.g., 99.99)"> <select id="conversion-type"><option value="purchase">Purchase</option><option value="upgrade">Upgrade</option><option value="subscribe">Subscribe</option></select> <button onclick="trackManualConversion()">Track Conversion</button></div></div></div><div class="container"><h2>📈 Activity Statistics</h2><div id="activity-stats" class="activity-stats"></div><button onclick="refreshActivityStats()">Refresh Stats</button></div><div class="container"><h2>🔧 Debug Information</h2><div id="debug-info" class="debug-info">Debug info will appear here...</div></div><div class="container"><h2>📝 Console Logs</h2><div id="console-logs" class="debug-info" style="max-height: 300px; overflow-y: auto;">Console logs will appear here...</div><button onclick="clearLogs()">Clear Logs</button></div><script>// Global variables for</script>testing let sdk = null; let logs = []; // Override console methods to capture logs const originalLog = console.log; const originalWarn = console.warn; const originalError = console.error; function captureLog(level, args) { const message = Array.from(args).map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg) ).join(' '); logs.push({ level, message, timestamp: new Date().toLocaleTimeString() }); updateConsoleLogs(); // Call original method if (level === 'log') originalLog.apply(console, args); else if (level === 'warn') originalWarn.apply(console, args); else if (level === 'error') originalError.apply(console, args); } console.log = (...args) => captureLog('log', args); console.warn = (...args) => captureLog('warn', args); console.error = (...args) => captureLog('error', args); function updateConsoleLogs() { const container = document.getElementById('console-logs'); container.innerHTML = logs.map(log => `<div style="color: ${log.level === 'error' ? 'red' : log.level === 'warn' ? 'orange' : 'black'}">[${log.timestamp}] ${log.level.toUpperCase()}: ${log.message}</div>` ).join(''); container.scrollTop = container.scrollHeight; } function clearLogs() { logs = []; updateConsoleLogs(); } // Initialize SDK when available function initializeSDK() { if (typeof window.Onboardly !== 'undefined') { sdk = window.Onboardly; console.log('SDK initialized successfully:', sdk.version); refreshStatus(); refreshActivityStats(); // Set up event listeners window.addEventListener('onboardly-initialized', (e) => { console.log('SDK initialization event:', e.detail); refreshStatus(); }); window.addEventListener('onboardly-detectionStarted', (e) => { console.log('Detection started event:', e.detail); refreshStatus(); }); window.addEventListener('onboardly-consent', (e) => { console.log('Consent event:', e.detail); refreshStatus(); }); } else { console.warn('SDK not yet available, retrying...'); setTimeout(initializeSDK, 1000); } } // Wait for SDK to load document.addEventListener('DOMContentLoaded', () => { setTimeout(initializeSDK, 500); }); function refreshStatus() { if (!sdk) { document.getElementById('sdk-status').innerHTML = 'SDK not loaded'; return; } const status = sdk.getStatus(); const consent = sdk.getConsentStatus(); document.getElementById('sdk-status').innerHTML = ` <strong>SDK Status:</strong><br>Version: ${status.version}<br>Initialized: ${status.initialized ? '✅' : '❌'}<br>Detecting: ${status.detecting ? '✅' : '❌'}<br>Has Consent: ${status.hasConsent ? '✅' : '❌'}<br>Has User Email: ${status.hasUserEmail ? '✅' : '❌'}<br><br><strong>Detectors:</strong><br>Form: ${status.detectors.form?.isActive ? '✅ Active' : '❌ Inactive'}<br>OAuth: ${status.detectors.oauth?.isActive ? '✅ Active' : '❌ Inactive'}<br>Activity: ${status.detectors.activity?.isActive ? '✅ Active' : '❌ Inactive'}<br><br><strong>Privacy:</strong><br>Consent Granted: ${consent.hasConsent ? '✅' : '❌'}<br>Opted Out: ${consent.isOptedOut ? '⚠️ Yes' : '✅ No'}<br>Do Not Track: ${consent.doNotTrack ? '⚠️ Enabled' : '✅ Disabled'} `; } function showDebugInfo() { if (!sdk) return; const debugInfo = sdk.getDebugInfo(); document.getElementById('debug-info').textContent = JSON.stringify(debugInfo, null, 2); } async function testConnection() { if (!sdk) return; try { const isConnected = await sdk.apiClient.testConnection(); alert(`Connection test: ${isConnected ? 'SUCCESS ✅' : 'FAILED ❌'}`); } catch (error) { alert(`Connection test failed: ${error.message}`); } } function optOut() { if (!sdk) return; sdk.optOut(); alert('Opted out of tracking'); refreshStatus(); } async function optIn() { if (!sdk) return; const hasConsent = await sdk.optIn(); alert(`Opt-in ${hasConsent ? 'successful' : 'failed'}`); refreshStatus(); } function deleteData() { if (!sdk) return; sdk.deleteUserData(); alert('User data deleted'); refreshStatus(); } async function trackManualSignup() { if (!sdk) return; const email = document.getElementById('manual-email').value; const method = document.getElementById('signup-method').value; if (!email) { alert('Please enter an email address'); return; } try { await sdk.trackSignup({ email, method }); alert('Signup tracked successfully!'); console.log('Manual signup tracked:', email, method); } catch (error) { alert('Failed to track signup: ' + error.message); console.error('Failed to track signup:', error); } } async function trackManualConversion() { if (!sdk) return; const email = document.getElementById('conversion-email').value; const value = parseFloat(document.getElementById('conversion-value').value); const type = document.getElementById('conversion-type').value; if (!email) { alert('Please enter an email address'); return; } try { await sdk.trackConversion({ email, value, type }); alert('Conversion tracked successfully!'); console.log('Manual conversion tracked:', email, type, value); } catch (error) { alert('Failed to track conversion: ' + error.message); console.error('Failed to track conversion:', error); } } function simulateOAuth(provider) { const code = 'test_auth_code_' + Date.now(); const state = 'test_state_' + provider; // Simulate OAuth redirect with authorization code const newUrl = `${window.location.origin}${window.location.pathname}?code=${code}&state=${state}`; // Set referrer to simulate OAuth provider Object.defineProperty(document, 'referrer', { value: `https://accounts.${provider}.com/oauth/authorize`, configurable: true }); // Navigate to simulate OAuth callback window.history.pushState({}, '', newUrl); console.log(`Simulated ${provider} OAuth callback with code: ${code}`); // Trigger a page reload simulation setTimeout(() => { if (sdk && sdk.detectors.oauth) { sdk.detectors.oauth.checkForOAuthReturn(); } }, 100); } function refreshActivityStats() { if (!sdk || !sdk.detectors.activity) return; const stats = sdk.detectors.activity.getActivityStats(); const container = document.getElementById('activity-stats'); container.innerHTML = `<div class="stat-card"><div class="stat-value">${Math.round(stats.sessionDuration / 1000)}s</div><div class="stat-label">Session Duration</div></div><div class="stat-card"><div class="stat-value">${Math.round(stats.activeTime / 1000)}s</div><div class="stat-label">Active Time</div></div><div class="stat-card"><div class="stat-value">${stats.scrollDepth}%</div><div class="stat-label">Scroll Depth</div></div><div class="stat-card"><div class="stat-value">${stats.clickCount}</div><div class="stat-label">Click Count</div></div><div class="stat-card"><div class="stat-value">${stats.pageViews}</div><div class="stat-label">Page Views</div></div><div class="stat-card"><div class="stat-value">${stats.isVisible ? '👁️' : '💤'}</div><div class="stat-label">Visibility</div></div>`; } // Prevent actual form submissions for testing document.addEventListener('submit', function(e) { e.preventDefault(); const formId = e.target.id; console.log(`Form submission prevented for testing: ${formId}`); alert(`Form "${formId}" would have been submitted (prevented for testing)`); // Simulate a short delay like a real form submission setTimeout(() => { console.log(`Simulated completion of form: ${formId}`); }, 500); }); // Auto-refresh stats periodically setInterval(() => { if (sdk) { refreshActivityStats(); } }, 5000);<script src="https://cdn.onboardly.com/sdk/onboardly.min.js" data-key="onboardly_1_1234567890" data-detect="signups,activity,oauth" data-debug="true" data-base-url="http://localhost:8000"></script></body></html>

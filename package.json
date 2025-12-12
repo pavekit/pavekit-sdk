@@ -1,0 +1,112 @@
+{
+  "name": "@pavekit/sdk",
+  "version": "1.0.1",
+  "description": "PaveKit JavaScript SDK for automated user onboarding detection",
+  "main": "dist/pavekit.js",
+  "module": "dist/pavekit.esm.js",
+  "types": "dist/pavekit.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "webpack serve --mode development --config webpack.config.js",
+    "build": "npm run build:webpack",
+    "build:webpack": "webpack --mode production --config webpack.config.js",
+    "build:rollup": "rollup -c rollup.config.js",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "docs": "./docs.sh",
+    "docs:html": "./docs.sh --format=html",
+    "docs:md": "./docs.sh --format=markdown",
+    "deploy": "./deploy.sh",
+    "deploy:patch": "./deploy.sh --patch",
+    "deploy:minor": "./deploy.sh --minor",
+    "deploy:major": "./deploy.sh --major",
+    "deploy:latest": "./deploy.sh --latest-only",
+    "cdn:deploy": "aws s3 sync dist/ s3://cdn.pavekit.com/sdk/",
+    "npm:publish": "npm publish --access public",
+    "clean": "rimraf dist",
+    "size": "bundlesize"
+  },
+  "devDependencies": {
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "rollup": "^4.6.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-babel": "^6.0.4",
+    "typescript": "^5.2.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "cypress": "^13.6.1",
+    "eslint": "^8.54.0",
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@babel/plugin-transform-runtime": "^7.23.4",
+    "babel-loader": "^9.1.3",
+    "terser-webpack-plugin": "^5.3.9",
+    "html-webpack-plugin": "^5.5.3",
+    "copy-webpack-plugin": "^11.0.0",
+    "jsdoc": "^4.0.2",
+    "rimraf": "^5.0.5",
+    "bundlesize": "^0.18.1"
+  },
+  "dependencies": {},
+  "keywords": [
+    "onboarding",
+    "email",
+    "campaigns",
+    "user-tracking",
+    "saas",
+    "automation",
+    "analytics",
+    "conversion"
+  ],
+  "author": "PaveKit Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourorg/pavekit-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/yourorg/pavekit-sdk/issues"
+  },
+  "homepage": "https://pavekit.com/docs/sdk",
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js"
+    ]
+  },
+  "bundlesize": [
+    {
+      "path": "./dist/pavekit.min.js",
+      "maxSize": "15 kB"
+    }
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
