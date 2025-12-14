@@ -297,6 +297,9 @@ jobs:
           cache: "npm"
           cache-dependency-path: "./package-lock.json"
 
+      - name: Update npm to 11.5.1+ (required for trusted publishing)
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: npm ci
 
@@ -325,6 +328,7 @@ jobs:
       - name: Debug NPM configuration
         run: |
           echo "🔍 Verifying NPM authentication setup..."
+          echo "npm version: $(npm --version)"
           echo "Registry: $(npm config get registry)"
           echo "Package version: $(node -p "require('./package.json').version")"
           echo "Package name: $(node -p "require('./package.json').name")"
