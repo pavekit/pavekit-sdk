@@ -1,6 +1,6 @@
 {
   "name": "@pavekit/sdk",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "PaveKit JavaScript SDK for automated user onboarding detection",
   "main": "dist/pavekit.min.js",
   "types": "dist/index.d.ts",
