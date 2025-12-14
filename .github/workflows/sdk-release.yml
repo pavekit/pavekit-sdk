@@ -40,7 +40,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "npm"
           cache-dependency-path: "./package-lock.json"
 
@@ -231,7 +231,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: Update version and push tag
         run: |
@@ -292,7 +292,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
           cache-dependency-path: "./package-lock.json"
@@ -321,6 +321,27 @@ jobs:
           ls -lh ./dist/
           echo ""
           echo "✅ Ready to publish version ${{ needs.build.outputs.new-version }}"
+
+      - name: Debug NPM configuration
+        run: |
+          echo "🔍 Verifying NPM authentication setup..."
+          echo "Registry: $(npm config get registry)"
+          echo "Package version: $(node -p "require('./package.json').version")"
+          echo "Package name: $(node -p "require('./package.json').name")"
+          echo ""
+          echo "🔐 Checking for .npmrc configuration..."
+          cat ~/.npmrc 2>/dev/null || echo "No .npmrc file found"
+          echo ""
+          echo "Environment variables (filtered):"
+          env | grep -E "^(NPM_|NODE_)" || echo "No NPM/NODE env vars"
+
+      - name: Verify NPM authentication
+        run: |
+          echo "🔐 Testing NPM authentication..."
+          npm whoami || echo "⚠️ npm whoami failed - this might be expected with OIDC"
+          echo ""
+          echo "📋 Checking package access..."
+          npm access list packages || echo "⚠️ Cannot list packages with OIDC token"
 
       - name: Publish to NPM with provenance
         run: npm publish --access public --provenance
