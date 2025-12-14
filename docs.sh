@@ -79,14 +79,24 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Function to check if npm package is installed locally
+npm_package_exists() {
+  [ -d "node_modules/$1" ] || npm list "$1" >/dev/null 2>&1
+}
+
 # Generate JSDoc documentation
 generate_jsdoc() {
-  if ! command_exists jsdoc; then
-    echo "Error: jsdoc not found. Please install it with: npm install -g jsdoc"
+  if ! command_exists jsdoc && ! npm_package_exists jsdoc; then
+    echo "Error: jsdoc not found. Please install it with: npm install --save-dev jsdoc"
     exit 1
   fi
 
-  local jsdoc_cmd="jsdoc $SOURCE_DIR"
+  # Use locally installed jsdoc if available, otherwise use global
+  if npm_package_exists jsdoc; then
+    local jsdoc_cmd="./node_modules/.bin/jsdoc $SOURCE_DIR"
+  else
+    local jsdoc_cmd="jsdoc $SOURCE_DIR"
+  fi
 
   # Add output directory
   jsdoc_cmd="$jsdoc_cmd --destination $OUTPUT_DIR"
@@ -108,16 +118,32 @@ generate_jsdoc() {
 
   # Configure template based on format
   case $FORMAT in
-    html)
-      jsdoc_cmd="$jsdoc_cmd --template node_modules/minami"
-      ;;
-    markdown)
-      jsdoc_cmd="$jsdoc_cmd --template node_modules/jsdoc-to-markdown"
-      ;;
-    *)
-      echo "Unknown format: $FORMAT. Defaulting to HTML."
-      jsdoc_cmd="$jsdoc_cmd --template node_modules/minami"
-      ;;
+  html)
+    jsdoc_cmd="$jsdoc_cmd --template node_modules/minami"
+    ;;
+  markdown)
+    # Use jsdoc-to-markdown for markdown generation
+    if npm_package_exists jsdoc-to-markdown; then
+      echo "Generating markdown documentation using jsdoc-to-markdown..."
+      # Find all JS files and generate markdown
+      JS_FILES=$(find $SOURCE_DIR -name "*.js" -type f | tr '\n' ' ')
+      if [ -z "$JS_FILES" ]; then
+        echo "Warning: No JavaScript files found in $SOURCE_DIR"
+        echo "# API Documentation" > "$OUTPUT_DIR/api.md"
+        echo "No JavaScript files found in source directory." >> "$OUTPUT_DIR/api.md"
+        return 0
+      fi
+      ./node_modules/.bin/jsdoc2md $JS_FILES > "$OUTPUT_DIR/api.md"
+      return 0
+    else
+      echo "Error: jsdoc-to-markdown not installed. Please run: npm install --save-dev jsdoc-to-markdown"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unknown format: $FORMAT. Defaulting to HTML."
+    jsdoc_cmd="$jsdoc_cmd --template node_modules/minami"
+    ;;
   esac
 
   echo "Generating JSDoc documentation..."

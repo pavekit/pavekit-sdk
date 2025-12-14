@@ -35,7 +35,7 @@ jobs:
 
       - name: Install JSDoc dependencies
         run: |
-          npm install -g jsdoc jsdoc-to-markdown
+          npm install
 
       - name: Generate HTML documentation
         run: |
