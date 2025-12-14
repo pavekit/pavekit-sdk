@@ -297,14 +297,29 @@ jobs:
           cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
-        working-directory: ./
         run: npm ci
 
-      - name: Update version
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-dist-${{ needs.build.outputs.new-version }}
+          path: ./dist/
+
+      - name: Update version in package.json
         run: npm version ${{ needs.build.outputs.new-version }} --no-git-tag-version
 
-      - name: Build types
+      - name: Generate TypeScript definitions
         run: npm run build:types
+
+      - name: Verify package contents
+        run: |
+          echo "📦 Package contents that will be published:"
+          npm pack --dry-run
+          echo ""
+          echo "📁 Dist directory contents:"
+          ls -lh ./dist/
+          echo ""
+          echo "✅ Ready to publish version ${{ needs.build.outputs.new-version }}"
 
       - name: Publish to NPM
         run: npm publish --access public

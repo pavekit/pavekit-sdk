@@ -2,11 +2,13 @@
   "name": "@pavekit/sdk",
   "version": "1.0.2",
   "description": "PaveKit JavaScript SDK for automated user onboarding detection",
-  "main": "dist/pavekit.js",
-  "module": "dist/pavekit.esm.js",
-  "types": "dist/pavekit.d.ts",
+  "main": "dist/pavekit.min.js",
+  "types": "dist/index.d.ts",
   "files": [
-    "dist/**/*",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
     "README.md",
     "LICENSE"
   ],
@@ -78,10 +80,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourorg/pavekit-sdk"
+    "url": "https://github.com/pavekit/pavekit-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/yourorg/pavekit-sdk/issues"
+    "url": "https://github.com/pavekit/pavekit-sdk/issues"
   },
   "homepage": "https://pavekit.com/docs/sdk",
   "browserslist": [
