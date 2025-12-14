@@ -632,12 +632,3 @@ export default PaveKitSDK;
 if (typeof window !== "undefined") {
   window.PaveKitSDK = PaveKitSDK;
 }
-// Updated comment
-// Trigger workflows
-// Trigger workflows again
-// Trigger workflows with package.json fix
-// Trigger workflows after YAML fix
-// Trigger workflows after YAML fix
-// Trigger workflows after YAML fix
-// Trigger workflows after YAML fix
-// Trigger workflows after YAML fix
