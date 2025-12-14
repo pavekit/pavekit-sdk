@@ -283,6 +283,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -321,7 +322,5 @@ jobs:
           echo ""
           echo "✅ Ready to publish version ${{ needs.build.outputs.new-version }}"
 
-      - name: Publish to NPM
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to NPM with provenance
+        run: npm publish --access public --provenance
