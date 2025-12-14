@@ -632,4 +632,4 @@ export default PaveKitSDK;
 if (typeof window !== "undefined") {
   window.PaveKitSDK = PaveKitSDK;
 }
-// Updated comment
+// Updated comments
