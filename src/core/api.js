@@ -1,30 +1,39 @@
 /**
- * APIClient - Handles all communication with the PaveKit backend
- * Provides methods for signup registration, activity tracking, and conversion events
+ * PaveKit Backend SDK - API Client
+ * Version 1.1.0 - Backend-only SDK for server-side user tracking
+ * 
+ * This SDK is designed for backend/server-side use only.
+ * Use it in your Node.js, Express, Next.js API routes, or other backend services.
  */
-class APIClient {
+
+class PaveKitAPI {
   constructor() {
-    this.baseURL = "http://localhost:8000"; // Default for development
+    this.baseURL = "http://localhost:8000";
     this.apiKey = null;
-    this.timeout = 5000; // 5 second timeout
+    this.timeout = 10000; // 10 second timeout for backend
     this.retryAttempts = 3;
-    this.retryDelay = 1000; // 1 second
+    this.retryDelay = 1000;
+    this.userId = null;
   }
 
   /**
-   * Initialize the API client with configuration
-   * @param {Object} config - Configuration object
-   * @param {string} config.apiKey - API key for authentication
-   * @param {string} config.baseURL - Base URL for API endpoints
+   * Initialize the API client
+   * @param {Object} config - Configuration
+   * @param {string} config.apiKey - Your PaveKit API key (required)
+   * @param {string} config.baseURL - API endpoint URL
    * @param {number} config.timeout - Request timeout in milliseconds
    */
   init(config) {
+    if (!config.apiKey) {
+      throw new Error("API key is required");
+    }
+
     this.apiKey = config.apiKey;
     this.baseURL = config.baseURL || this.baseURL;
     this.timeout = config.timeout || this.timeout;
 
     if (config.debug) {
-      console.log("APIClient initialized:", {
+      console.log("[PaveKit] Initialized:", {
         baseURL: this.baseURL,
         hasApiKey: !!this.apiKey,
       });
@@ -32,13 +41,11 @@ class APIClient {
   }
 
   /**
-   * Make an HTTP request with retry logic
-   * @param {string} endpoint - API endpoint
-   * @param {Object} options - Request options
-   * @returns {Promise} Response promise
+   * Make HTTP request with retry logic
+   * @private
    */
   async makeRequest(endpoint, options = {}) {
-    const url = `${this.baseURL}/api/onboarding/sdk${endpoint}`;
+    const url = `${this.baseURL}/api${endpoint}`;
 
     const requestOptions = {
       method: "POST",
@@ -50,7 +57,7 @@ class APIClient {
       ...options,
     };
 
-    // Add timeout using AbortController
+    // Add timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
     requestOptions.signal = controller.signal;
@@ -66,22 +73,18 @@ class APIClient {
           return await response.json();
         }
 
-        // Handle HTTP errors
         const errorData = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       } catch (error) {
         clearTimeout(timeoutId);
         lastError = error;
 
-        // Don't retry on certain errors
-        if (
-          error.name === "AbortError" ||
-          (error.message && error.message.includes("401"))
-        ) {
+        // Don't retry on auth errors
+        if (error.message && error.message.includes("401")) {
           throw error;
         }
 
-        // Wait before retrying (except on last attempt)
+        // Wait before retrying
         if (attempt < this.retryAttempts) {
           await this.delay(this.retryDelay * attempt);
         }
@@ -92,272 +95,133 @@ class APIClient {
   }
 
   /**
-   * Register a user signup event
-   * @param {Object} data - Signup data
-   * @param {string} data.email - User email address
-   * @param {string} data.signup_method - Signup method ('form', 'oauth_google', 'oauth_github')
-   * @param {string} data.page_url - URL where signup occurred
-   * @param {string} data.referrer - Referrer URL
-   * @param {Object} data.metadata - Additional metadata
-   * @returns {Promise} API response
+   * Track user activity (unified method)
+   * 
+   * @param {Object} data - Activity data
+   * @param {string} data.email - User email (required)
+   * @param {string} [data.name] - User's full name
+   * @param {Object} [data.metadata] - Custom metadata object
+   * @param {boolean} [data.conversion_status=false] - Whether user has converted
+   * @returns {Promise<Object>} Response with user_id
+   * 
+   * @example
+   * // Track new user signup
+   * await client.track({
+   *   email: 'user@example.com',
+   *   name: 'John Doe',
+   *   metadata: {
+   *     signup_source: 'api',
+   *     plan: 'premium'
+   *   }
+   * });
+   * 
+   * @example
+   * // Mark user as converted
+   * await client.track({
+   *   email: 'user@example.com',
+   *   conversion_status: true,
+   *   metadata: {
+   *     plan: 'enterprise',
+   *     value: 999
+   *   }
+   * });
    */
-  async registerSignup(data) {
+  async track(data) {
     if (!this.apiKey) {
-      throw new Error("API key not configured");
+      throw new Error("API key not configured. Call init() first.");
     }
 
     if (!data.email) {
-      throw new Error("Email is required for signup registration");
+      throw new Error("Email is required");
     }
 
     const payload = {
       email: data.email,
-      signup_method: data.signup_method || "form",
-      page_url: data.page_url || window.location.href,
-      referrer: data.referrer || document.referrer,
-      user_agent: navigator.userAgent,
-      metadata: data.metadata || {},
+      name: data.name || undefined,
+      metadata: data.metadata || undefined,
+      conversion_status: data.conversion_status || false,
+      user_id: this.userId || undefined,
     };
 
-    console.log("APIClient: Registering signup with payload:", payload);
-    console.log(
-      "APIClient: JSON stringified payload:",
-      JSON.stringify(payload),
+    // Remove undefined values
+    Object.keys(payload).forEach(
+      (key) => payload[key] === undefined && delete payload[key],
     );
 
     try {
-      const result = await this.makeRequest("/signup", {
+      const result = await this.makeRequest("/v1/activity", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      console.log("APIClient: Signup registered successfully:", result);
+
+      // Store user_id for future requests
+      if (result.user_id) {
+        this.userId = result.user_id;
+      }
+
       return result;
     } catch (error) {
-      console.error("Failed to register signup:", error);
-      console.error("APIClient: Payload that failed:", payload);
+      console.error("[PaveKit] Track failed:", error.message);
       throw error;
     }
   }
 
   /**
-   * Track user activity (heartbeat)
-   * @param {Object} data - Activity data
-   * @param {string} data.email - User email address
-   * @param {string} data.page_url - Current page URL
-   * @returns {Promise} API response
+   * Validate API key
+   * @returns {Promise<Object>} Validation response
    */
-  async trackActivity(data) {
-    if (!this.apiKey || !data.email) {
-      return; // Silently fail for activity tracking
-    }
-
-    const payload = {
-      email: data.email,
-      page_url: data.page_url || window.location.href,
-      timestamp: new Date().toISOString(),
-    };
-
-    try {
-      return await this.makeRequest("/activity", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      // Don't throw errors for activity tracking
-      console.warn("Failed to track activity:", error.message);
-    }
-  }
-
-  /**
-   * Update user information
-   * @param {Object} data - User data to update
-   * @param {string} data.email - User email address (required to identify user)
-   * @param {string} data.name - User's display name
-   * @returns {Promise} API response
-   */
-  async updateUser(data) {
-    if (!this.apiKey) {
-      throw new Error("API key not configured");
-    }
-
-    if (!data.email) {
-      throw new Error("Email is required to update user info");
-    }
-
-    const payload = {
-      email: data.email,
-      name: data.name || "",
-    };
-
-    try {
-      return await this.makeRequest("/user-info", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      console.error("Failed to update user info:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Track conversion event
-   * @param {Object} data - Conversion data
-   * @param {string} data.email - User email address
-   * @param {string} data.conversion_type - Type of conversion ('purchase', 'upgrade', 'subscribe')
-   * @param {number} data.value - Conversion value
-   * @param {string} data.currency - Currency code
-   * @param {Object} data.metadata - Additional metadata
-   * @returns {Promise} API response
-   */
-  async trackConversion(data) {
-    if (!this.apiKey) {
-      throw new Error("API key not configured");
-    }
-
-    if (!data.email) {
-      throw new Error("Email is required for conversion tracking");
-    }
-
-    const payload = {
-      email: data.email,
-      conversion_type: data.conversion_type || "purchase",
-      value: data.value || 0,
-      currency: data.currency || "USD",
-      metadata: data.metadata || {},
-    };
-
-    try {
-      return await this.makeRequest("/conversion", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      console.error("Failed to track conversion:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Validate API key with the backend
-   * @returns {Promise} Validation response
-   */
-  async validateAPIKey() {
+  async validate() {
     if (!this.apiKey) {
       throw new Error("API key not configured");
     }
 
     try {
-      return await this.makeRequest("/validate", {
+      return await this.makeRequest("/v1/validate", {
         method: "GET",
       });
     } catch (error) {
-      console.error("API key validation failed:", error);
+      console.error("[PaveKit] Validation failed:", error.message);
       throw error;
     }
   }
 
   /**
-   * Send a batch of events (for offline support)
-   * @param {Array} events - Array of events to send
-   * @returns {Promise} Batch response
-   */
-  async sendBatch(events) {
-    if (!this.apiKey || !events || events.length === 0) {
-      return;
-    }
-
-    const payload = {
-      events: events,
-      batch_timestamp: new Date().toISOString(),
-    };
-
-    try {
-      return await this.makeRequest("/batch", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      console.error("Failed to send batch:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get API configuration from backend
-   * @returns {Promise} Configuration response
-   */
-  async getConfig() {
-    if (!this.apiKey) {
-      throw new Error("API key not configured");
-    }
-
-    try {
-      return await this.makeRequest("/config", {
-        method: "GET",
-      });
-    } catch (error) {
-      console.warn("Failed to get config:", error);
-      return {}; // Return empty config on failure
-    }
-  }
-
-  /**
-   * Test connection to the API
-   * @returns {Promise<boolean>} True if connection successful
-   */
-  async testConnection() {
-    try {
-      await this.validateAPIKey();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Delay execution for specified milliseconds
-   * @param {number} ms - Milliseconds to delay
-   * @returns {Promise} Promise that resolves after delay
-   */
-  delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Get current API client status
+   * Get current client status
    * @returns {Object} Status information
    */
   getStatus() {
     return {
       initialized: !!this.apiKey,
       baseURL: this.baseURL,
-      hasConnection: true, // Would be set by periodic health checks
-      lastError: null,
+      userId: this.userId,
+      connected: true,
     };
   }
 
   /**
-   * Update configuration
-   * @param {Object} config - New configuration
+   * Delay helper for retries
+   * @private
    */
-  updateConfig(config) {
-    if (config.baseURL) this.baseURL = config.baseURL;
-    if (config.timeout) this.timeout = config.timeout;
-    if (config.retryAttempts) this.retryAttempts = config.retryAttempts;
-    if (config.retryDelay) this.retryDelay = config.retryDelay;
+  delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
-   * Reset API client to initial state
+   * Reset client state
    */
   reset() {
     this.apiKey = null;
     this.baseURL = "http://localhost:8000";
-    this.timeout = 5000;
+    this.timeout = 10000;
     this.retryAttempts = 3;
     this.retryDelay = 1000;
+    this.userId = null;
   }
 }
 
-export default APIClient;
+// Export for CommonJS and ES modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = PaveKitAPI;
+}
+
+export default PaveKitAPI;

@@ -1,681 +1,572 @@
-# PaveKit JavaScript SDK
+# PaveKit Backend SDK v1.1
 
-Privacy-compliant user onboarding detection for automated email campaigns.
+**Backend-only SDK for server-side user activity tracking.**
 
-The PaveKit SDK automatically detects user signups and activity on your website to trigger personalized onboarding email campaigns. Built with privacy-first principles and GDPR compliance.
+Track user signups, activity, and conversions from your Node.js backend, API routes, or serverless functions. This SDK is designed exclusively for server-side use.
 
-## Features
-
-- Automatic Signup Detection - Detects form submissions and OAuth completions
-- Privacy-First - GDPR compliant with user consent management
-- Security Focused - Never captures passwords or sensitive data
-- Lightweight - Under 15KB gzipped
-- Cross-Browser - Works in all modern browsers
-- Mobile Friendly - Optimized for mobile devices
-- Easy Integration - One script tag to get started
-
-## Quick Start
-
-### 1. Script Tag Integration (Recommended)
-
-Add the SDK to your website's `<head>` section:
-
-```html
-<script src="https://cdn.pavekit.com/sdk/pavekit.min.js"
-        data-key="your-api-key"
-        data-detect="signups,activity">
-</script>
-```
-
-That's it! The SDK will automatically:
-- Detect user signups on your forms
-- Track OAuth authentication completions  
-- Monitor user activity (with consent)
-- Send data to trigger your email campaigns
-
-### 2. NPM Installation
+## Installation
 
 ```bash
 npm install @pavekit/sdk
 ```
 
-```javascript
-import PaveKitSDK from '@pavekit/sdk';
+## Quick Start
 
-const sdk = new PaveKitSDK();
-await sdk.init({
-  apiKey: 'your-api-key',
-  detect: ['signups', 'activity', 'oauth']
+```javascript
+const PaveKit = require('@pavekit/sdk');
+
+// Initialize
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL || 'https://api.pavekit.com'
 });
-```
 
-## Configuration Options
-
-### Script Tag Attributes
-
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `data-key` | *required* | Your PaveKit API key |
-| `data-detect` | `"signups,activity"` | Detection features to enable |
-| `data-base-url` | Production URL | API base URL (for development) |
-| `data-debug` | `false` | Enable debug logging |
-| `data-privacy` | `"gdpr-compliant"` | Privacy compliance mode |
-| `data-consent-banner` | `true` | Show consent banner |
-
-### JavaScript Configuration
-
-```javascript
-const config = {
-  apiKey: 'your-api-key',              // Required: Your API key
-  baseURL: 'https://api.pavekit.com',  // API endpoint
-  detect: ['signups', 'oauth', 'activity'], // Features to detect
-  debug: false,                         // Debug mode
-  privacy: 'gdpr-compliant',           // Privacy mode
-  consentBanner: true,                 // Show consent banner
-  autoCleanup: true                    // Clean sensitive URL params
-};
-
-await sdk.init(config);
-```
-
-## Detection Features
-
-### Signup Detection (signups)
-
-Automatically detects when users complete signup forms:
-
-- Email field detection - Captures email addresses securely
-- Password filtering - Never captures passwords or sensitive data
-- Smart form recognition - Distinguishes signup from login forms
-- Security validation - Validates all data before capture
-
-What gets detected:
-- Registration forms with email + password
-- Newsletter signups (if configured)
-- Account creation forms
-- Trial signup forms
-
-What gets filtered out:
-- Login forms
-- Password reset forms  
-- Contact forms
-- Search forms
-
-### OAuth Detection (oauth)
-
-Detects OAuth authentication completions:
-
-- Provider detection - Google, GitHub, Microsoft, Facebook, etc.
-- Token-safe - Never accesses OAuth tokens or secrets
-- Real-time detection - Catches OAuth redirects immediately
-- URL cleanup - Removes sensitive parameters from URLs
-
-Supported OAuth providers:
-- Google (oauth_google)
-- GitHub (oauth_github) 
-- Microsoft (oauth_microsoft)
-- Facebook (oauth_facebook)
-- Twitter (oauth_twitter)
-- Custom OAuth providers
-
-### Activity Tracking (activity)
-
-Privacy-compliant user engagement tracking:
-
-- Time on page - Measures active engagement time
-- Scroll depth - Tracks how far users scroll
-- Click tracking - Counts safe interactions only
-- Visibility detection - Respects page visibility
-- Consent required - Only tracks with user permission
-
-Activity metrics:
-- Session duration
-- Active time (excludes idle time)
-- Scroll percentage
-- Safe click count
-- Page views
-
-## Privacy and Security
-
-### GDPR Compliance
-
-The SDK is built for privacy compliance:
-
-```javascript
-// Check consent status
-const consent = sdk.getConsentStatus();
-console.log(consent.hasConsent);     // User has given consent
-console.log(consent.isOptedOut);     // User has opted out
-console.log(consent.doNotTrack);     // Browser DNT setting
-
-// Request consent manually
-const hasConsent = await sdk.requestConsent();
-
-// Opt out completely
-sdk.optOut();
-
-// Delete all user data
-sdk.deleteUserData();
-```
-
-### Security Features
-
-- No sensitive data - Never captures passwords, tokens, or PII
-- Field filtering - Automatically filters sensitive form fields
-- Input validation - Validates and sanitizes all captured data
-- Secure transmission - HTTPS-only API communication
-- Data minimization - Captures only necessary information
-
-### Data Protection
-
-```javascript
-// What we NEVER capture:
-// - Passwords
-// - Credit card numbers
-// - OAuth tokens
-// - API keys
-// - Social security numbers
-// - Hidden form fields
-
-// What we DO capture (with consent):
-// - Email addresses
-// - Names (first/last)
-// - Company information
-// - Safe form data only
+// Track user signup
+await pavekit.track({
+  email: 'user@example.com',
+  name: 'John Doe',
+  metadata: {
+    signup_source: 'api',
+    plan: 'premium'
+  }
+});
 ```
 
 ## API Reference
 
-### SDK Methods
+### `init(config)`
 
-#### init(config)
-
-Initialize the SDK with configuration:
+Initialize the SDK with your API key.
 
 ```javascript
-await sdk.init({
-  apiKey: 'your-api-key',
-  detect: ['signups', 'activity'],
-  debug: true
+pavekit.init({
+  apiKey: 'your-api-key',      // Required
+  baseURL: 'api-endpoint',      // Optional, defaults to localhost:8000
+  timeout: 10000                // Optional, request timeout in ms
 });
 ```
 
-#### trackSignup(data)
+### `track(data)`
 
-Manually track a signup event:
+Track user activity. This is the main method for all tracking operations.
+
+**Parameters:**
+- `email` (string, required) - User's email address
+- `name` (string, optional) - User's full name  
+- `metadata` (object, optional) - Custom data to store with the user
+- `conversion_status` (boolean, optional) - Mark user as converted
+
+**Returns:** Promise with `{ success, message, user_id, created }`
+
+**Examples:**
 
 ```javascript
-await sdk.trackSignup({
+// Track new user signup
+await pavekit.track({
   email: 'user@example.com',
-  method: 'manual',
+  name: 'John Doe',
   metadata: {
-    source: 'landing-page'
+    signup_method: 'api',
+    utm_source: 'google',
+    plan_interest: 'premium'
+  }
+});
+
+// Update user with additional data
+await pavekit.track({
+  email: 'user@example.com',
+  metadata: {
+    company: 'Acme Inc',
+    role: 'Engineering Manager',
+    team_size: '10-50'
+  }
+});
+
+// Mark user as converted (stops email campaigns)
+await pavekit.track({
+  email: 'user@example.com',
+  conversion_status: true,
+  metadata: {
+    plan: 'enterprise',
+    value: 999,
+    currency: 'USD'
   }
 });
 ```
 
-#### updateUser(data)
+### `validate()`
 
-Update user information such as name. This allows you to personalize onboarding emails with the user's actual name instead of extracting it from their email address.
+Validate your API key.
 
 ```javascript
-await sdk.updateUser({
-  email: 'user@example.com',
-  name: 'John Smith'
-});
+const result = await pavekit.validate();
+// { success: true, valid: true, workspace_id: 123 }
 ```
 
-Parameters:
-- `email` (required) - User's email address to identify the user
-- `name` (optional) - User's display name for email personalization
+### `getStatus()`
 
-The name will be used in email templates via the `{{user_name}}` variable.
-
-#### trackConversion(data)
-
-Track conversion events to stop email campaigns:
+Get current SDK status.
 
 ```javascript
-await sdk.trackConversion({
-  email: 'user@example.com',
-  type: 'purchase',
-  value: 99.99,
-  currency: 'USD'
-});
+const status = pavekit.getStatus();
+// { initialized: true, baseURL: '...', userId: '...', connected: true }
 ```
 
-#### setUserEmail(email)
+## Framework Integration
 
-Set user email for activity tracking:
-
-```javascript
-sdk.setUserEmail('user@example.com');
-```
-
-#### getStatus()
-
-Get current SDK status:
+### Express.js
 
 ```javascript
-const status = sdk.getStatus();
-console.log(status);
-// {
-//   version: '1.0.0',
-//   initialized: true,
-//   detecting: true,
-//   hasConsent: true,
-//   detectors: { ... }
-// }
-```
+const express = require('express');
+const PaveKit = require('@pavekit/sdk');
 
-### Privacy Methods
+const app = express();
+app.use(express.json());
 
-#### getConsentStatus()
-
-Check privacy consent status:
-
-```javascript
-const consent = sdk.getConsentStatus();
-console.log(consent);
-// {
-//   hasConsent: true,
-//   isOptedOut: false,
-//   consentTimestamp: '2023-...',
-//   doNotTrack: false
-// }
-```
-
-#### optOut() / optIn()
-
-Manage user privacy preferences:
-
-```javascript
-// Opt out of all tracking
-sdk.optOut();
-
-// Opt back in (requests consent)
-const hasConsent = await sdk.optIn();
-```
-
-## Template Variables
-
-When users are tracked by the SDK, their information can be used in email templates. The following variables are available:
-
-| Variable | Description | Source |
-|----------|-------------|--------|
-| `{{user_email}}` | User's email address | Detected from signup form or OAuth |
-| `{{user_name}}` | User's display name | Set via `updateUser()` or extracted from email |
-| `{{signup_date}}` | Date when user signed up | Automatic |
-| `{{company_name}}` | Your company name | Set in PaveKit Profile settings |
-| `{{discount_code}}` | Discount code from template | Template configuration |
-| `{{discount_value}}` | Discount percentage | Template configuration |
-| `{{product_name}}` | Your product name | Set in PaveKit Profile settings |
-| `{{support_email}}` | Your support email | Your account email |
-
-### Updating User Name
-
-To personalize emails with the user's actual name (instead of extracting from email), call `updateUser()` after signup:
-
-```javascript
-// After detecting a signup or getting user info from your backend
-await sdk.updateUser({
-  email: 'john.smith@example.com',
-  name: 'John Smith'
-});
-```
-
-This is especially useful when:
-- You have the user's name from an OAuth provider
-- The user provides their name in a profile form
-- You want more personalized onboarding emails
-
-## Advanced Usage
-
-### Custom Event Listeners
-
-Listen for SDK events:
-
-```javascript
-// SDK initialized
-window.addEventListener('pavekit-initialized', (e) => {
-  console.log('SDK ready:', e.detail.version);
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL
 });
 
-// Detection started
-window.addEventListener('pavekit-detectionStarted', (e) => {
-  console.log('Detecting:', e.detail.detectors);
-});
-
-// Consent changed
-window.addEventListener('pavekit-consent', (e) => {
-  console.log('Consent:', e.detail.type);
-});
-```
-
-### Manual Detection Control
-
-Control detection manually:
-
-```javascript
-// Start detection
-sdk.startDetection();
-
-// Stop detection
-sdk.stopDetection();
-
-// Update configuration
-sdk.updateConfig({
-  detect: ['signups'], // Only detect signups
-  debug: true
-});
-```
-
-### Custom Privacy Settings
-
-Customize privacy behavior:
-
-```javascript
-await sdk.init({
-  apiKey: 'your-api-key',
-  consentBanner: true,
-  privacy: 'gdpr-compliant'
-});
-
-// Custom consent request
-const hasConsent = await sdk.privacyManager.requestConsent({
-  message: 'We use cookies to improve your experience.',
-  privacyUrl: '/privacy-policy',
-  timeout: 30000
-});
-```
-
-### Debug Mode
-
-Enable debugging for development:
-
-```javascript
-// Via config
-await sdk.init({
-  apiKey: 'your-api-key',
-  debug: true
-});
-
-// Get debug information
-const debugInfo = sdk.getDebugInfo();
-console.log(debugInfo);
-```
-
-## Integration Examples
-
-### React Integration
-
-```jsx
-import { useEffect } from 'react';
-import PaveKitSDK from '@pavekit/sdk';
-
-function App() {
-  useEffect(() => {
-    const initPaveKit = async () => {
-      const sdk = new PaveKitSDK();
-      await sdk.init({
-        apiKey: process.env.REACT_APP_PAVEKIT_KEY,
-        detect: ['signups', 'activity']
-      });
-      
-      // Make SDK available globally
-      window.pavekit = sdk;
-    };
+app.post('/api/signup', async (req, res) => {
+  const { email, name } = req.body;
+  
+  try {
+    await pavekit.track({
+      email,
+      name,
+      metadata: {
+        signup_source: 'api',
+        ip: req.ip
+      }
+    });
     
-    initPaveKit();
-  }, []);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-  return <div>Your app content</div>;
+app.post('/api/purchase', async (req, res) => {
+  const { email, plan, amount } = req.body;
+  
+  try {
+    await pavekit.track({
+      email,
+      conversion_status: true,
+      metadata: {
+        plan,
+        amount,
+        currency: 'USD'
+      }
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+### Next.js API Routes
+
+```javascript
+// pages/api/signup.js
+import PaveKit from '@pavekit/sdk';
+
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL
+});
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { email, name } = req.body;
+
+  try {
+    const result = await pavekit.track({
+      email,
+      name,
+      metadata: {
+        signup_source: 'web',
+        page: '/signup'
+      }
+    });
+
+    res.status(200).json({ success: true, user_id: result.user_id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
 ```
 
-### Vue Integration
+### Next.js App Router (Server Actions)
 
-```vue
-<script>
-import PaveKitSDK from '@pavekit/sdk';
+```typescript
+// app/actions.ts
+'use server'
+
+import PaveKit from '@pavekit/sdk';
+
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY!,
+  baseURL: process.env.PAVEKIT_API_URL!
+});
+
+export async function trackSignup(email: string, name: string) {
+  try {
+    await pavekit.track({
+      email,
+      name,
+      metadata: {
+        signup_source: 'app'
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function trackConversion(email: string, plan: string, amount: number) {
+  try {
+    await pavekit.track({
+      email,
+      conversion_status: true,
+      metadata: {
+        plan,
+        amount,
+        currency: 'USD'
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+```
+
+### Nuxt 3 Server Routes
+
+```javascript
+// server/api/track.post.ts
+import PaveKit from '@pavekit/sdk';
+
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL
+});
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event);
+
+  try {
+    const result = await pavekit.track({
+      email: body.email,
+      name: body.name,
+      metadata: body.metadata || {}
+    });
+
+    return { success: true, user_id: result.user_id };
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      message: error.message
+    });
+  }
+});
+```
+
+### Cloudflare Workers
+
+```javascript
+import PaveKit from '@pavekit/sdk';
 
 export default {
-  async mounted() {
-    const sdk = new PaveKitSDK();
-    await sdk.init({
-      apiKey: process.env.VUE_APP_PAVEKIT_KEY,
-      detect: ['signups', 'oauth', 'activity']
-    });
-    
-    this.$pavekit = sdk;
-  }
-}
-</script>
-```
-
-### Next.js Integration
-
-```javascript
-// pages/_app.js
-import { useEffect } from 'react';
-
-function MyApp({ Component, pageProps }) {
-  useEffect(() => {
-    // Load SDK after hydration
-    if (typeof window !== 'undefined') {
-      import('@pavekit/sdk').then(async ({ default: PaveKitSDK }) => {
-        const sdk = new PaveKitSDK();
-        await sdk.init({
-          apiKey: process.env.NEXT_PUBLIC_PAVEKIT_KEY,
-          detect: ['signups', 'activity']
-        });
-      });
+  async fetch(request, env) {
+    if (request.method !== 'POST') {
+      return new Response('Method not allowed', { status: 405 });
     }
-  }, []);
 
-  return <Component {...pageProps} />;
-}
-```
-
-### Capturing User Name from OAuth
-
-When using OAuth providers like Google, you often receive the user's name. Pass it to PaveKit:
-
-```javascript
-// After OAuth callback
-async function handleOAuthSuccess(oauthUser) {
-  // Track the signup
-  await window.pavekit.trackSignup({
-    email: oauthUser.email,
-    method: 'oauth_google'
-  });
-  
-  // Update with the user's actual name from OAuth
-  if (oauthUser.name) {
-    await window.pavekit.updateUser({
-      email: oauthUser.email,
-      name: oauthUser.name
+    const pavekit = new PaveKit();
+    pavekit.init({
+      apiKey: env.PAVEKIT_API_KEY,
+      baseURL: env.PAVEKIT_API_URL
     });
+
+    const { email, name, metadata } = await request.json();
+
+    try {
+      const result = await pavekit.track({
+        email,
+        name,
+        metadata
+      });
+
+      return Response.json({ success: true, user_id: result.user_id });
+    } catch (error) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
   }
-}
+};
 ```
 
-### E-commerce Integration
-
-Track purchases to stop onboarding campaigns:
+### AWS Lambda
 
 ```javascript
-// After successful purchase
-await sdk.trackConversion({
-  email: customerEmail,
-  type: 'purchase',
-  value: orderTotal,
-  currency: 'USD',
+const PaveKit = require('@pavekit/sdk');
+
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL
+});
+
+exports.handler = async (event) => {
+  const { email, name, metadata } = JSON.parse(event.body);
+
+  try {
+    const result = await pavekit.track({
+      email,
+      name,
+      metadata
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, user_id: result.user_id })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
+  }
+};
+```
+
+## Metadata Examples
+
+The `metadata` field accepts any JSON-serializable object. Use it to store custom attributes:
+
+```javascript
+await pavekit.track({
+  email: 'user@example.com',
+  name: 'John Doe',
   metadata: {
-    orderId: order.id,
-    products: order.items.map(item => item.name)
+    // User attributes
+    company: 'Acme Inc',
+    role: 'Engineering Manager',
+    team_size: '10-50',
+    industry: 'SaaS',
+    
+    // Behavioral data
+    features_used: ['analytics', 'exports', 'api'],
+    last_login: new Date().toISOString(),
+    
+    // Marketing attribution
+    utm_source: 'google',
+    utm_campaign: 'summer-2024',
+    utm_medium: 'cpc',
+    
+    // Custom business logic
+    trial_end_date: '2024-12-31',
+    onboarding_completed: false,
+    
+    // Nested objects
+    preferences: {
+      email_notifications: true,
+      theme: 'dark'
+    }
   }
 });
 ```
 
-## Troubleshooting
+## Error Handling
 
-### Common Issues
+The SDK throws errors for failed requests. Always use try-catch:
 
-SDK not initializing:
 ```javascript
-// Check API key is set
-const script = document.querySelector('script[src*="pavekit"]');
-console.log(script.dataset.key); // Should show your API key
-
-// Check console for errors
-sdk.getDebugInfo(); // Shows detailed status
+try {
+  await pavekit.track({
+    email: 'user@example.com',
+    name: 'John Doe'
+  });
+} catch (error) {
+  console.error('PaveKit tracking failed:', error.message);
+  // Handle error (log, retry, etc.)
+}
 ```
 
-Forms not being detected:
+Common errors:
+- `API key not configured` - Call `init()` first
+- `Email is required` - Missing required email parameter
+- `Invalid API key` - Check your API key
+- `HTTP 500` - Server error, check backend logs
+
+## Environment Variables
+
+Recommended setup:
+
+```bash
+# .env
+PAVEKIT_API_KEY=pk_live_xxxxxxxxxxxxx
+PAVEKIT_API_URL=https://api.pavekit.com
+
+# or for local development
+PAVEKIT_API_URL=http://localhost:8000
+```
+
+## Best Practices
+
+### 1. Initialize Once
+
+Initialize the SDK once at application startup:
+
 ```javascript
-// Check detector status
-const status = sdk.getStatus();
-console.log(status.detectors.form); // Should show isActive: true
+// utils/pavekit.js
+const PaveKit = require('@pavekit/sdk');
 
-// Check form structure
-const forms = sdk.detectors.form.getDetectedForms();
-console.log(forms); // Shows detected forms
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY,
+  baseURL: process.env.PAVEKIT_API_URL
+});
+
+module.exports = pavekit;
 ```
 
-Privacy consent issues:
+Then import and use:
+
 ```javascript
-// Check consent status
-const consent = sdk.getConsentStatus();
-console.log(consent);
+const pavekit = require('./utils/pavekit');
 
-// Force consent for testing (development only)
-sdk.privacyManager.grantConsent('explicit');
+await pavekit.track({ email: 'user@example.com' });
 ```
 
-### Debug Mode
+### 2. Use Metadata Effectively
 
-Enable debug mode for detailed logging:
+Store all custom data in metadata:
 
-```html
-<script src="https://cdn.pavekit.com/sdk/pavekit.min.js"
-        data-key="your-api-key"
-        data-debug="true">
-</script>
+```javascript
+await pavekit.track({
+  email: 'user@example.com',
+  name: 'John Doe',
+  metadata: {
+    // Everything specific to your business
+    signup_source: 'landing-page-a',
+    plan: 'premium',
+    company_size: '50-100',
+    industry: 'fintech'
+  }
+});
 ```
 
-### Browser Support
+### 3. Track Conversions
 
-Supported browsers:
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
+Mark users as converted to stop email campaigns:
 
-Required features:
-- fetch() API
-- Promise support
-- addEventListener()
-- querySelector()
+```javascript
+// After successful purchase/subscription
+await pavekit.track({
+  email: 'user@example.com',
+  conversion_status: true,
+  metadata: {
+    plan: 'enterprise',
+    mrr: 999,
+    payment_method: 'stripe'
+  }
+});
+```
+
+### 4. Fire and Forget (Optional)
+
+For non-critical tracking, you can use fire-and-forget:
+
+```javascript
+// Don't await if you don't need to block
+pavekit.track({
+  email: 'user@example.com',
+  metadata: { page: '/dashboard' }
+}).catch(err => console.error('Tracking failed:', err));
+
+// Or use Promise.allSettled for multiple tracks
+await Promise.allSettled([
+  pavekit.track({ email: 'user1@example.com' }),
+  pavekit.track({ email: 'user2@example.com' })
+]);
+```
+
+## API Endpoint
+
+The SDK communicates with:
+- `POST /api/v1/activity` - Unified tracking endpoint
+- `GET /api/v1/validate` - API key validation
+
+## TypeScript Support
+
+TypeScript definitions included:
+
+```typescript
+import PaveKit from '@pavekit/sdk';
+
+interface TrackData {
+  email: string;
+  name?: string;
+  metadata?: Record<string, any>;
+  conversion_status?: boolean;
+}
+
+const pavekit = new PaveKit();
+pavekit.init({
+  apiKey: process.env.PAVEKIT_API_KEY!,
+  baseURL: process.env.PAVEKIT_API_URL
+});
+
+await pavekit.track({
+  email: 'user@example.com',
+  name: 'John Doe',
+  metadata: {
+    plan: 'premium'
+  }
+} as TrackData);
+```
 
 ## Testing
 
-### Test Page
-
-Create a test page to verify SDK functionality:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="https://cdn.pavekit.com/sdk/pavekit.min.js"
-            data-key="your-test-api-key"
-            data-debug="true">
-    </script>
-</head>
-<body>
-    <h1>SDK Test Page</h1>
-    
-    <!-- Test signup form -->
-    <form id="signup-form" action="/signup" method="post">
-        <input type="text" name="name" placeholder="Name">
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Sign Up</button>
-    </form>
-    
-    <script>
-        // Check SDK status
-        setTimeout(() => {
-            if (window.PaveKit) {
-                console.log('SDK Status:', window.PaveKit.getStatus());
-            }
-        }, 1000);
-        
-        // Test updating user name after form submission
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            const formData = new FormData(e.target);
-            const name = formData.get('name');
-            const email = formData.get('email');
-            
-            if (name && email && window.PaveKit) {
-                await window.PaveKit.updateUser({ email, name });
-            }
-        });
-    </script>
-</body>
-</html>
-```
-
-### Manual Testing
-
-Test SDK functions in browser console:
+Test your integration:
 
 ```javascript
-// Check if SDK loaded
-console.log(window.PaveKit);
+// Validate API key first
+const validation = await pavekit.validate();
+console.log('API key valid:', validation.valid);
 
-// Get status
-window.PaveKit.getStatus();
-
-// Test manual tracking
-await window.PaveKit.trackSignup({
+// Test tracking
+const result = await pavekit.track({
   email: 'test@example.com',
-  method: 'manual'
+  name: 'Test User',
+  metadata: {
+    test: true
+  }
 });
-
-// Test updating user info
-await window.PaveKit.updateUser({
-  email: 'test@example.com',
-  name: 'Test User'
-});
-
-// Check activity stats
-window.PaveKit.detectors.activity.getActivityStats();
+console.log('User tracked:', result.user_id);
 ```
 
-## SDK Endpoints
+## Support
 
-The SDK communicates with the following backend endpoints:
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/onboarding/sdk/signup` | POST | Register a new user signup |
-| `/api/onboarding/sdk/activity` | POST | Track user activity heartbeat |
-| `/api/onboarding/sdk/conversion` | POST | Track conversion events |
-| `/api/onboarding/sdk/user-info` | POST | Update user information (name) |
-| `/api/onboarding/sdk/validate` | GET | Validate API key |
-
-## Links
-
-- Documentation: https://docs.pavekit.com
-- Dashboard: https://app.pavekit.com
-- Support: https://pavekit.com/support
+- **Documentation**: https://docs.pavekit.com
+- **API Reference**: https://docs.pavekit.com/api/v1
+- **Issues**: https://github.com/pavekit/pavekit-sdk/issues
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT
 
----
-
-PaveKit - Automated User Onboarding

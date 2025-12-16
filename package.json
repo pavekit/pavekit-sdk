@@ -1,6 +1,6 @@
 {
   "name": "@pavekit/sdk",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "description": "PaveKit JavaScript SDK for automated user onboarding detection",
   "main": "dist/pavekit.min.js",
   "types": "dist/index.d.ts",
@@ -95,9 +95,7 @@
   ],
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js"
-    ],
+    "setupFilesAfterEnv": [],
     "testMatch": [
       "<rootDir>/tests/**/*.test.js"
     ],
