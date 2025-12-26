@@ -1,9 +1,11 @@
 /**
  * PaveKit Backend SDK - API Client
- * Version 1.1.0 - Backend-only SDK for server-side user tracking
- * 
+ * Version 1.2.0 - Backend-only SDK for server-side user tracking
+ *
  * This SDK is designed for backend/server-side use only.
  * Use it in your Node.js, Express, Next.js API routes, or other backend services.
+ *
+ * NEW: Template name support for email templates
  */
 
 class PaveKitAPI {
@@ -96,14 +98,15 @@ class PaveKitAPI {
 
   /**
    * Track user activity (unified method)
-   * 
+   *
    * @param {Object} data - Activity data
    * @param {string} data.email - User email (required)
    * @param {string} [data.name] - User's full name
    * @param {Object} [data.metadata] - Custom metadata object
    * @param {boolean} [data.conversion_status=false] - Whether user has converted
+   * @param {string} [data.template_name] - Email template name (NEW)
    * @returns {Promise<Object>} Response with user_id
-   * 
+   *
    * @example
    * // Track new user signup
    * await client.track({
@@ -114,7 +117,19 @@ class PaveKitAPI {
    *     plan: 'premium'
    *   }
    * });
-   * 
+   *
+   * @example
+   * // Track signup with welcome email template
+   * await client.track({
+   *   email: 'user@example.com',
+   *   name: 'John Doe',
+   *   template_name: 'welcome-get-started',
+   *   metadata: {
+   *     signup_source: 'oauth',
+   *     signup_method: 'google'
+   *   }
+   * });
+   *
    * @example
    * // Mark user as converted
    * await client.track({
@@ -140,6 +155,7 @@ class PaveKitAPI {
       name: data.name || undefined,
       metadata: data.metadata || undefined,
       conversion_status: data.conversion_status || false,
+      template_name: data.template_name || undefined,
       user_id: this.userId || undefined,
     };
 
@@ -162,6 +178,72 @@ class PaveKitAPI {
       return result;
     } catch (error) {
       console.error("[PaveKit] Track failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Track user signup with email template (convenience method)
+   *
+   * @param {Object} data - Signup data
+   * @param {string} data.email - User email (required)
+   * @param {string} [data.name] - User's full name
+   * @param {string} data.template_name - Email template name (required)
+   * @param {Object} [data.metadata] - Custom metadata object
+   * @returns {Promise<Object>} Response with user_id
+   *
+   * @example
+   * // Send welcome email using template
+   * await client.trackSignupWithTemplate({
+   *   email: 'user@example.com',
+   *   name: 'John Doe',
+   *   template_name: 'welcome-get-started',
+   *   metadata: {
+   *     signup_source: 'landing-page',
+   *     utm_campaign: 'summer-2024'
+   *   }
+   * });
+   */
+  async trackSignupWithTemplate(data) {
+    if (!data.template_name) {
+      throw new Error("Template name is required for template-based tracking");
+    }
+
+    return this.track({
+      ...data,
+      metadata: {
+        ...data.metadata,
+        welcome_email: true,
+        template_used: data.template_name,
+      },
+    });
+  }
+
+  /**
+   * Get available email templates by name
+   *
+   * @param {string} templateName - Template name
+   * @returns {Promise<Object>} Template details
+   *
+   * @example
+   * const template = await client.getTemplateByName('welcome-get-started');
+   * console.log(template.subject_line);
+   */
+  async getTemplateByName(templateName) {
+    if (!this.apiKey) {
+      throw new Error("API key not configured. Call init() first.");
+    }
+
+    if (!templateName) {
+      throw new Error("Template name is required");
+    }
+
+    try {
+      return await this.makeRequest(`/templates/by-name/${templateName}`, {
+        method: "GET",
+      });
+    } catch (error) {
+      console.error("[PaveKit] Get template failed:", error.message);
       throw error;
     }
   }
@@ -220,7 +302,6 @@ class PaveKitAPI {
 }
 
 // Export for CommonJS and ES modules
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = PaveKitAPI;
 }
-

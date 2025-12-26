@@ -1,4 +1,4 @@
-# PaveKit Backend SDK v1.1
+# PaveKit Backend SDK v1.2
 
 **Backend-only SDK for server-side user activity tracking.**
 
@@ -53,9 +53,10 @@ Track user activity. This is the main method for all tracking operations.
 
 **Parameters:**
 - `email` (string, required) - User's email address
-- `name` (string, optional) - User's full name  
+- `name` (string, optional) - User's full name
 - `metadata` (object, optional) - Custom data to store with the user
 - `conversion_status` (boolean, optional) - Mark user as converted
+- `template_friendly_name` (string, optional) - Email template friendly name for welcome emails
 
 **Returns:** Promise with `{ success, message, user_id, created }`
 
@@ -70,6 +71,17 @@ await pavekit.track({
     signup_method: 'api',
     utm_source: 'google',
     plan_interest: 'premium'
+  }
+});
+
+// Track signup with welcome email template
+await pavekit.track({
+  email: 'user@example.com',
+  name: 'John Doe',
+  template_friendly_name: 'welcome-get-started',
+  metadata: {
+    signup_source: 'oauth',
+    signup_method: 'google'
   }
 });
 
@@ -93,6 +105,65 @@ await pavekit.track({
     currency: 'USD'
   }
 });
+```
+
+### `trackSignupWithTemplate(data)`
+
+Convenience method for tracking signups with email templates.
+
+**Parameters:**
+- `email` (string, required) - User's email address
+- `name` (string, optional) - User's full name
+- `template_friendly_name` (string, required) - Email template friendly name
+- `metadata` (object, optional) - Custom data to store with the user
+
+**Returns:** Promise with `{ success, message, user_id, created }`
+
+**Example:**
+
+```javascript
+// Send welcome email using specific template
+await pavekit.trackSignupWithTemplate({
+  email: 'user@example.com',
+  name: 'John Doe',
+  template_friendly_name: 'welcome-get-started',
+  metadata: {
+    signup_source: 'landing-page',
+    utm_campaign: 'summer-2024'
+  }
+});
+```
+
+### `getTemplateByFriendlyName(friendlyName)`
+
+Get template details by friendly name.
+
+**Parameters:**
+- `friendlyName` (string, required) - Template friendly name
+
+**Returns:** Promise with template details
+
+**Example:**
+
+```javascript
+const template = await pavekit.getTemplateByFriendlyName('welcome-get-started');
+console.log(template.subject_line);
+```
+
+### `generateFriendlyName(templateName)`
+
+Generate URL-friendly name from template name (useful for frontend preview).
+
+**Parameters:**
+- `templateName` (string, required) - Original template name
+
+**Returns:** Promise with `{ friendly_name }`
+
+**Example:**
+
+```javascript
+const result = await pavekit.generateFriendlyName('My Welcome Email');
+console.log(result.friendly_name); // "my-welcome-email"
 ```
 
 ### `validate()`
@@ -353,6 +424,29 @@ exports.handler = async (event) => {
 };
 ```
 
+## Template Friendly Names
+
+Template friendly names are URL-safe identifiers for your email templates:
+
+- Generated automatically from template names
+- Lowercase, alphanumeric with hyphens
+- Unique per workspace
+- Used instead of template IDs for better readability
+
+**Examples:**
+- "Welcome & Get Started" → `welcome-get-started`
+- "Tips & Features" → `tips-features`  
+- "Weekly Newsletter" → `weekly-newsletter`
+
+**Frontend Integration:**
+
+```javascript
+// When user types template name, auto-generate friendly name
+const templateName = "My Awesome Welcome Email";
+const result = await pavekit.generateFriendlyName(templateName);
+// Display to user: "Will be saved as: my-awesome-welcome-email"
+```
+
 ## Metadata Examples
 
 The `metadata` field accepts any JSON-serializable object. Use it to store custom attributes:
@@ -361,26 +455,31 @@ The `metadata` field accepts any JSON-serializable object. Use it to store custo
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
+  template_friendly_name: 'welcome-get-started',
   metadata: {
     // User attributes
     company: 'Acme Inc',
     role: 'Engineering Manager',
     team_size: '10-50',
     industry: 'SaaS',
-    
+
     // Behavioral data
     features_used: ['analytics', 'exports', 'api'],
     last_login: new Date().toISOString(),
-    
+
     // Marketing attribution
     utm_source: 'google',
     utm_campaign: 'summer-2024',
     utm_medium: 'cpc',
-    
+
+    // Email template info
+    template_used: 'welcome-get-started',
+    welcome_email: true,
+
     // Custom business logic
     trial_end_date: '2024-12-31',
     onboarding_completed: false,
-    
+
     // Nested objects
     preferences: {
       email_notifications: true,
@@ -449,10 +548,33 @@ Then import and use:
 ```javascript
 const pavekit = require('./utils/pavekit');
 
-await pavekit.track({ email: 'user@example.com' });
+await pavekit.track({ 
+  email: 'user@example.com',
+  template_friendly_name: 'welcome-get-started'
+});
 ```
 
-### 2. Use Metadata Effectively
+### 2. Use Template Friendly Names
+
+Use descriptive, URL-friendly template names:
+
+```javascript
+// Good: Clear, descriptive friendly names
+await pavekit.trackSignupWithTemplate({
+  email: 'user@example.com',
+  name: 'John Doe',
+  template_friendly_name: 'welcome-get-started', // Clear purpose
+  metadata: {
+    signup_source: 'oauth',
+    signup_method: 'google'
+  }
+});
+
+// Avoid: Generic or unclear names
+// template_friendly_name: 'template1' // ❌ Not descriptive
+```
+
+### 3. Use Metadata Effectively
 
 Store all custom data in metadata:
 
@@ -460,17 +582,19 @@ Store all custom data in metadata:
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
+  template_friendly_name: 'welcome-get-started',
   metadata: {
     // Everything specific to your business
     signup_source: 'landing-page-a',
     plan: 'premium',
     company_size: '50-100',
-    industry: 'fintech'
+    industry: 'fintech',
+    template_used: 'welcome-get-started'
   }
 });
 ```
 
-### 3. Track Conversions
+### 4. Track Conversions
 
 Mark users as converted to stop email campaigns:
 
@@ -487,7 +611,7 @@ await pavekit.track({
 });
 ```
 
-### 4. Fire and Forget (Optional)
+### 5. Fire and Forget (Optional)
 
 For non-critical tracking, you can use fire-and-forget:
 
@@ -495,12 +619,16 @@ For non-critical tracking, you can use fire-and-forget:
 // Don't await if you don't need to block
 pavekit.track({
   email: 'user@example.com',
+  template_friendly_name: 'tips-features',
   metadata: { page: '/dashboard' }
 }).catch(err => console.error('Tracking failed:', err));
 
 // Or use Promise.allSettled for multiple tracks
 await Promise.allSettled([
-  pavekit.track({ email: 'user1@example.com' }),
+  pavekit.trackSignupWithTemplate({ 
+    email: 'user1@example.com',
+    template_friendly_name: 'welcome-get-started'
+  }),
   pavekit.track({ email: 'user2@example.com' })
 ]);
 ```
@@ -534,6 +662,7 @@ pavekit.init({
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
+  template_friendly_name: 'welcome-get-started',
   metadata: {
     plan: 'premium'
   }
@@ -553,6 +682,7 @@ console.log('API key valid:', validation.valid);
 const result = await pavekit.track({
   email: 'test@example.com',
   name: 'Test User',
+  template_friendly_name: 'welcome-get-started',
   metadata: {
     test: true
   }
