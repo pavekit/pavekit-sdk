@@ -1,6 +1,6 @@
 /**
  * Backend SDK Tests
- * Tests for the backend-only PaveKit SDK v1.1
+ * Tests for the backend-only PaveKit SDK v1.3
  */
 
 const PaveKitAPI = require('../src/core/api.js');
@@ -8,7 +8,7 @@ const PaveKitAPI = require('../src/core/api.js');
 // Mock fetch globally
 global.fetch = jest.fn();
 
-describe('PaveKit Backend SDK v1.1', () => {
+describe('PaveKit Backend SDK v1.3', () => {
   let client;
 
   beforeEach(() => {
@@ -66,7 +66,7 @@ describe('PaveKit Backend SDK v1.1', () => {
       ).rejects.toThrow('Email is required');
     });
 
-    test('should track user with email only', async () => {
+    test('should track user with email only (default state: created)', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -88,13 +88,16 @@ describe('PaveKit Backend SDK v1.1', () => {
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
             'X-API-Key': 'test-key'
-          }),
-          body: JSON.stringify({
-            email: 'test@example.com',
-            conversion_status: false
           })
         })
       );
+
+      // Verify body content (parse to avoid order issues)
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody).toEqual({
+        email: 'test@example.com',
+        user_state: 'created'
+      });
 
       expect(result.success).toBe(true);
       expect(result.user_id).toBe('123-456');
@@ -114,26 +117,24 @@ describe('PaveKit Backend SDK v1.1', () => {
       await client.track({
         email: 'test@example.com',
         name: 'Test User',
+        user_state: 'created',
         metadata: {
           plan: 'premium',
           source: 'api'
         }
       });
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/activity',
-        expect.objectContaining({
-          body: JSON.stringify({
-            email: 'test@example.com',
-            name: 'Test User',
-            metadata: {
-              plan: 'premium',
-              source: 'api'
-            },
-            conversion_status: false
-          })
-        })
-      );
+      // Verify body content (parse to avoid order issues)
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody).toEqual({
+        email: 'test@example.com',
+        name: 'Test User',
+        user_state: 'created',
+        metadata: {
+          plan: 'premium',
+          source: 'api'
+        }
+      });
     });
 
     test('should mark user as converted', async () => {
@@ -148,26 +149,32 @@ describe('PaveKit Backend SDK v1.1', () => {
 
       await client.track({
         email: 'test@example.com',
-        conversion_status: true,
+        user_state: 'converted',
         metadata: {
           plan: 'enterprise',
           value: 999
         }
       });
 
-      expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8000/api/v1/activity',
-        expect.objectContaining({
-          body: JSON.stringify({
-            email: 'test@example.com',
-            metadata: {
-              plan: 'enterprise',
-              value: 999
-            },
-            conversion_status: true
-          })
+      // Verify body content (parse to avoid order issues)
+      const callBody = JSON.parse(fetch.mock.calls[0][1].body);
+      expect(callBody).toEqual({
+        email: 'test@example.com',
+        user_state: 'converted',
+        metadata: {
+          plan: 'enterprise',
+          value: 999
+        }
+      });
+    });
+
+    test('should reject invalid user_state', async () => {
+      await expect(
+        client.track({
+          email: 'test@example.com',
+          user_state: 'invalid'
         })
-      );
+      ).rejects.toThrow("user_state must be 'created' or 'converted'");
     });
 
     test('should handle API errors', async () => {

@@ -1,8 +1,8 @@
-# PaveKit Backend SDK v1.2
+# PaveKit Backend SDK v1.3
 
 **Backend-only SDK for server-side user activity tracking.**
 
-Track user signups, activity, and conversions from your Node.js backend, API routes, or serverless functions. This SDK is designed exclusively for server-side use.
+Track user signups and conversions from your Node.js backend, API routes, or serverless functions. This SDK is designed exclusively for server-side use with a simple state-based approach.
 
 ## Installation
 
@@ -26,6 +26,7 @@ pavekit.init({
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
+  user_state: 'created',
   metadata: {
     signup_source: 'api',
     plan: 'premium'
@@ -55,15 +56,18 @@ Track user activity. This is the main method for all tracking operations.
 - `email` (string, required) - User's email address
 - `name` (string, optional) - User's full name
 - `metadata` (object, optional) - Custom data to store with the user
-- `conversion_status` (boolean, optional) - Mark user as converted
-- `template_friendly_name` (string, optional) - Email template friendly name for welcome emails
+- `user_state` (string, optional) - User state: `'created'` or `'converted'` (defaults to `'created'`)
 
 **Returns:** Promise with `{ success, message, user_id, created }`
+
+**User States:**
+- `'created'` - User has signed up (default state)
+- `'converted'` - User has completed a conversion action (stops email campaigns)
 
 **Examples:**
 
 ```javascript
-// Track new user signup
+// Track new user signup (default state: created)
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
@@ -74,11 +78,11 @@ await pavekit.track({
   }
 });
 
-// Track signup with welcome email template
+// Explicitly set state to created
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
-  template_friendly_name: 'welcome-get-started',
+  user_state: 'created',
   metadata: {
     signup_source: 'oauth',
     signup_method: 'google'
@@ -98,72 +102,13 @@ await pavekit.track({
 // Mark user as converted (stops email campaigns)
 await pavekit.track({
   email: 'user@example.com',
-  conversion_status: true,
+  user_state: 'converted',
   metadata: {
     plan: 'enterprise',
     value: 999,
     currency: 'USD'
   }
 });
-```
-
-### `trackSignupWithTemplate(data)`
-
-Convenience method for tracking signups with email templates.
-
-**Parameters:**
-- `email` (string, required) - User's email address
-- `name` (string, optional) - User's full name
-- `template_friendly_name` (string, required) - Email template friendly name
-- `metadata` (object, optional) - Custom data to store with the user
-
-**Returns:** Promise with `{ success, message, user_id, created }`
-
-**Example:**
-
-```javascript
-// Send welcome email using specific template
-await pavekit.trackSignupWithTemplate({
-  email: 'user@example.com',
-  name: 'John Doe',
-  template_friendly_name: 'welcome-get-started',
-  metadata: {
-    signup_source: 'landing-page',
-    utm_campaign: 'summer-2024'
-  }
-});
-```
-
-### `getTemplateByFriendlyName(friendlyName)`
-
-Get template details by friendly name.
-
-**Parameters:**
-- `friendlyName` (string, required) - Template friendly name
-
-**Returns:** Promise with template details
-
-**Example:**
-
-```javascript
-const template = await pavekit.getTemplateByFriendlyName('welcome-get-started');
-console.log(template.subject_line);
-```
-
-### `generateFriendlyName(templateName)`
-
-Generate URL-friendly name from template name (useful for frontend preview).
-
-**Parameters:**
-- `templateName` (string, required) - Original template name
-
-**Returns:** Promise with `{ friendly_name }`
-
-**Example:**
-
-```javascript
-const result = await pavekit.generateFriendlyName('My Welcome Email');
-console.log(result.friendly_name); // "my-welcome-email"
 ```
 
 ### `validate()`
@@ -203,17 +148,18 @@ pavekit.init({
 
 app.post('/api/signup', async (req, res) => {
   const { email, name } = req.body;
-  
+
   try {
     await pavekit.track({
       email,
       name,
+      user_state: 'created',
       metadata: {
         signup_source: 'api',
         ip: req.ip
       }
     });
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -222,18 +168,18 @@ app.post('/api/signup', async (req, res) => {
 
 app.post('/api/purchase', async (req, res) => {
   const { email, plan, amount } = req.body;
-  
+
   try {
     await pavekit.track({
       email,
-      conversion_status: true,
+      user_state: 'converted',
       metadata: {
         plan,
         amount,
         currency: 'USD'
       }
     });
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -264,6 +210,7 @@ export default async function handler(req, res) {
     const result = await pavekit.track({
       email,
       name,
+      user_state: 'created',
       metadata: {
         signup_source: 'web',
         page: '/signup'
@@ -296,6 +243,7 @@ export async function trackSignup(email: string, name: string) {
     await pavekit.track({
       email,
       name,
+      user_state: 'created',
       metadata: {
         signup_source: 'app'
       }
@@ -310,7 +258,7 @@ export async function trackConversion(email: string, plan: string, amount: numbe
   try {
     await pavekit.track({
       email,
-      conversion_status: true,
+      user_state: 'converted',
       metadata: {
         plan,
         amount,
@@ -343,6 +291,7 @@ export default defineEventHandler(async (event) => {
     const result = await pavekit.track({
       email: body.email,
       name: body.name,
+      user_state: body.user_state || 'created',
       metadata: body.metadata || {}
     });
 
@@ -373,12 +322,13 @@ export default {
       baseURL: env.PAVEKIT_API_URL
     });
 
-    const { email, name, metadata } = await request.json();
+    const { email, name, user_state, metadata } = await request.json();
 
     try {
       const result = await pavekit.track({
         email,
         name,
+        user_state: user_state || 'created',
         metadata
       });
 
@@ -402,12 +352,13 @@ pavekit.init({
 });
 
 exports.handler = async (event) => {
-  const { email, name, metadata } = JSON.parse(event.body);
+  const { email, name, user_state, metadata } = JSON.parse(event.body);
 
   try {
     const result = await pavekit.track({
       email,
       name,
+      user_state: user_state || 'created',
       metadata
     });
 
@@ -424,27 +375,23 @@ exports.handler = async (event) => {
 };
 ```
 
-## Template Friendly Names
+## User States Explained
 
-Template friendly names are URL-safe identifiers for your email templates:
+The SDK uses a simple state-based system for tracking users:
 
-- Generated automatically from template names
-- Lowercase, alphanumeric with hyphens
-- Unique per workspace
-- Used instead of template IDs for better readability
+### `created` (Default State)
+- User has signed up or been created
+- Email campaigns will be sent to users in this state
+- This is the default state if not specified
 
-**Examples:**
-- "Welcome & Get Started" → `welcome-get-started`
-- "Tips & Features" → `tips-features`  
-- "Weekly Newsletter" → `weekly-newsletter`
+### `converted`
+- User has completed a conversion action (purchase, subscription, etc.)
+- Email campaigns will automatically stop for converted users
+- Once converted, the user won't receive nurture emails
 
-**Frontend Integration:**
-
-```javascript
-// When user types template name, auto-generate friendly name
-const templateName = "My Awesome Welcome Email";
-const result = await pavekit.generateFriendlyName(templateName);
-// Display to user: "Will be saved as: my-awesome-welcome-email"
+**State Transitions:**
+```
+created → converted (one-way, cannot be reversed)
 ```
 
 ## Metadata Examples
@@ -455,7 +402,7 @@ The `metadata` field accepts any JSON-serializable object. Use it to store custo
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
-  template_friendly_name: 'welcome-get-started',
+  user_state: 'created',
   metadata: {
     // User attributes
     company: 'Acme Inc',
@@ -471,10 +418,6 @@ await pavekit.track({
     utm_source: 'google',
     utm_campaign: 'summer-2024',
     utm_medium: 'cpc',
-
-    // Email template info
-    template_used: 'welcome-get-started',
-    welcome_email: true,
 
     // Custom business logic
     trial_end_date: '2024-12-31',
@@ -508,6 +451,7 @@ try {
 Common errors:
 - `API key not configured` - Call `init()` first
 - `Email is required` - Missing required email parameter
+- `user_state must be 'created' or 'converted'` - Invalid state value
 - `Invalid API key` - Check your API key
 - `HTTP 500` - Server error, check backend logs
 
@@ -548,33 +492,13 @@ Then import and use:
 ```javascript
 const pavekit = require('./utils/pavekit');
 
-await pavekit.track({ 
+await pavekit.track({
   email: 'user@example.com',
-  template_friendly_name: 'welcome-get-started'
+  user_state: 'created'
 });
 ```
 
-### 2. Use Template Friendly Names
-
-Use descriptive, URL-friendly template names:
-
-```javascript
-// Good: Clear, descriptive friendly names
-await pavekit.trackSignupWithTemplate({
-  email: 'user@example.com',
-  name: 'John Doe',
-  template_friendly_name: 'welcome-get-started', // Clear purpose
-  metadata: {
-    signup_source: 'oauth',
-    signup_method: 'google'
-  }
-});
-
-// Avoid: Generic or unclear names
-// template_friendly_name: 'template1' // ❌ Not descriptive
-```
-
-### 3. Use Metadata Effectively
+### 2. Use Metadata Effectively
 
 Store all custom data in metadata:
 
@@ -582,19 +506,18 @@ Store all custom data in metadata:
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
-  template_friendly_name: 'welcome-get-started',
+  user_state: 'created',
   metadata: {
     // Everything specific to your business
     signup_source: 'landing-page-a',
     plan: 'premium',
     company_size: '50-100',
-    industry: 'fintech',
-    template_used: 'welcome-get-started'
+    industry: 'fintech'
   }
 });
 ```
 
-### 4. Track Conversions
+### 3. Track Conversions
 
 Mark users as converted to stop email campaigns:
 
@@ -602,7 +525,7 @@ Mark users as converted to stop email campaigns:
 // After successful purchase/subscription
 await pavekit.track({
   email: 'user@example.com',
-  conversion_status: true,
+  user_state: 'converted',
   metadata: {
     plan: 'enterprise',
     mrr: 999,
@@ -611,7 +534,7 @@ await pavekit.track({
 });
 ```
 
-### 5. Fire and Forget (Optional)
+### 4. Fire and Forget (Optional)
 
 For non-critical tracking, you can use fire-and-forget:
 
@@ -619,17 +542,14 @@ For non-critical tracking, you can use fire-and-forget:
 // Don't await if you don't need to block
 pavekit.track({
   email: 'user@example.com',
-  template_friendly_name: 'tips-features',
+  user_state: 'created',
   metadata: { page: '/dashboard' }
 }).catch(err => console.error('Tracking failed:', err));
 
 // Or use Promise.allSettled for multiple tracks
 await Promise.allSettled([
-  pavekit.trackSignupWithTemplate({ 
-    email: 'user1@example.com',
-    template_friendly_name: 'welcome-get-started'
-  }),
-  pavekit.track({ email: 'user2@example.com' })
+  pavekit.track({ email: 'user1@example.com', user_state: 'created' }),
+  pavekit.track({ email: 'user2@example.com', user_state: 'created' })
 ]);
 ```
 
@@ -650,7 +570,7 @@ interface TrackData {
   email: string;
   name?: string;
   metadata?: Record<string, any>;
-  conversion_status?: boolean;
+  user_state?: 'created' | 'converted';
 }
 
 const pavekit = new PaveKit();
@@ -662,7 +582,7 @@ pavekit.init({
 await pavekit.track({
   email: 'user@example.com',
   name: 'John Doe',
-  template_friendly_name: 'welcome-get-started',
+  user_state: 'created',
   metadata: {
     plan: 'premium'
   }
@@ -682,12 +602,42 @@ console.log('API key valid:', validation.valid);
 const result = await pavekit.track({
   email: 'test@example.com',
   name: 'Test User',
-  template_friendly_name: 'welcome-get-started',
+  user_state: 'created',
   metadata: {
     test: true
   }
 });
 console.log('User tracked:', result.user_id);
+```
+
+## Migration from v1.x
+
+If you're upgrading from v1.x, here are the changes:
+
+**Removed:**
+- `template_name` / `template_friendly_name` parameters
+- `trackSignupWithTemplate()` method
+- `getTemplateByFriendlyName()` method
+- `generateFriendlyName()` method
+- `conversion_status` boolean parameter
+
+**Added:**
+- `user_state` parameter with values: `'created'` or `'converted'`
+
+**Migration examples:**
+
+```javascript
+// v1.x (old)
+await pavekit.track({
+  email: 'user@example.com',
+  conversion_status: true
+});
+
+// v1.3 (new)
+await pavekit.track({
+  email: 'user@example.com',
+  user_state: 'converted'
+});
 ```
 
 ## Support
@@ -699,4 +649,3 @@ console.log('User tracked:', result.user_id);
 ## License
 
 MIT
-
